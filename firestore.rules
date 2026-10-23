@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Single-user app: everything lives under users/{uid} and only that user can read it.
+// The app itself may only write what it needs; imports (Strava, bank, prices,
+// Claude reports) are written by Cloud Functions with the Admin SDK, which bypasses rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      // Read access to every sub-collection.
+      match /{collection}/{docId} {
+        allow read: if isOwner(uid);
+      }
+
+      // Thoughts typed from the web app.
+      match /entries/{docId} {
+        allow create: if isOwner(uid)
+          && request.resource.data.kind in ['dream', 'note']
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 20000;
+        allow update, delete: if isOwner(uid);
+      }
+
+      // Sorting an expense (essentiel / social / superflu) is the only edit allowed.
+      match /transactions/{docId} {
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['necessity'])
+          && request.resource.data.necessity in ['essentiel', 'social', 'superflu', null];
+      }
+
+      // Accepting or rejecting a training adjustment proposed by Claude.
+      match /proposals/{docId} {
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['accepted', 'rejected'];
+      }
+    }
+  }
+}

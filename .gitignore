@@ -1,0 +1,24 @@
+# Dependencies and builds
+node_modules/
+dist/
+dev-dist/
+functions/lib/
+
+# Local config and secrets: never committed
+.env
+.env.local
+.env.*.local
+functions/.env*
+!functions/.env.example
+functions/.secret.local
+.firebaserc
+.firebase/
+*-debug.log
+firebase-debug*.log
+firestore-debug.log
+ui-debug.log
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
