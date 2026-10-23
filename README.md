@@ -20,7 +20,7 @@ Les stats de course sont dans Garmin et Strava, les rêves dans les notes du té
 | --- | --- | --- |
 | Pensées | Noter un rêve ou une idée en 2 secondes avec l'Action Button de l'iPhone | ✅ |
 | Pensées | Journal filtrable des rêves et des notes | ✅ |
-| Finance | Saisir une dépense ou une entrée depuis l'Action Button | ✅ |
+| Finance | Saisir une dépense depuis l'Action Button ou le bouton + de l'app | ✅ |
 | Finance | Import automatique des paiements Apple Pay | ✅ |
 | Finance | Trier chaque dépense : essentielle, sociale ou superflue | ✅ |
 | Sport | Import des sorties Strava, FC, allures et zones | 🚧 |
@@ -123,4 +123,7 @@ Ce dépôt est public, mes données non. Elles vivent uniquement dans Firestore,
 
 ## Stack
 
-React 19, Vite, TypeScript, PWA (Workbox) · Firebase Auth, Firestore, Cloud Functions v2 (Node 22) · Zod, Vitest · GitHub Actions
+- **Interface** : React 19, Vite, TypeScript, PWA (Workbox). Look iOS natif : SF Pro sur Apple (Geist ailleurs), couleurs système d'Apple, gros titres, barre d'onglets flottante en verre.
+- **Composants** : [Motion](https://motion.dev) pour les animations, [NumberFlow](https://number-flow.barvian.me) pour les montants animés, [Recharts](https://recharts.org) pour les graphiques, [Vaul](https://vaul.emilkowal.ski) pour la feuille de saisie, [Sonner](https://sonner.emilkowal.ski) pour les notifications, [Phosphor](https://phosphoricons.com) pour les icônes.
+- **Backend** : Firebase Auth, Firestore, Cloud Functions v2 (Node 22), Zod, Vitest.
+- **Outillage** : GitHub Actions (CI et démo sur GitHub Pages). La démo ne télécharge jamais Firebase : le code connecté est chargé à la demande.
