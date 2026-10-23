@@ -25,8 +25,16 @@ service cloud.firestore {
         allow update, delete: if isOwner(uid);
       }
 
-      // Sorting an expense (essentiel / social / superflu) is the only edit allowed.
+      // Expenses typed in the app, and sorting one (essentiel / social / superflu).
       match /transactions/{docId} {
+        allow create: if isOwner(uid)
+          && request.resource.data.source == 'manual'
+          && request.resource.data.amountCents is int
+          && request.resource.data.amountCents != 0
+          && request.resource.data.label is string
+          && request.resource.data.label.size() > 0
+          && request.resource.data.label.size() <= 200
+          && request.resource.data.necessity in ['essentiel', 'social', 'superflu', null];
         allow update: if isOwner(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['necessity'])
           && request.resource.data.necessity in ['essentiel', 'social', 'superflu', null];

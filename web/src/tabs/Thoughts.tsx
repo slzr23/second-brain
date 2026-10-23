@@ -1,54 +1,43 @@
-import { useState, type FormEvent } from "react";
-import { useData } from "../data/DataProvider";
+import { MoonStars, NotePencil } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Segmented } from "../components/Segmented";
+import { useData } from "../data/context";
 import type { EntryKind } from "../data/types";
-import { formatDay, formatTime } from "../lib/format";
+import { formatTime, groupByDay } from "../lib/format";
 
-const KIND_LABEL: Record<EntryKind, string> = { dream: "Rêve", note: "Note" };
 type Filter = "all" | EntryKind;
-const FILTERS: { id: Filter; label: string }[] = [
+const FILTERS = [
   { id: "all", label: "Tout" },
   { id: "dream", label: "Rêves" },
   { id: "note", label: "Notes" },
-];
+] as const;
 
-function QuickEntry() {
-  const { addEntry } = useData();
-  const [kind, setKind] = useState<EntryKind>("dream");
-  const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
+const KIND = {
+  dream: { label: "Rêve", icon: MoonStars },
+  note: { label: "Note", icon: NotePencil },
+} as const;
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!text.trim()) return;
-    setSaving(true);
-    await addEntry(kind, text.trim());
-    setText("");
-    setSaving(false);
-  }
-
+function WeeklyThemes() {
+  const { dreamReport } = useData();
   return (
-    <form className="quick" onSubmit={submit}>
-      <div className="segmented" role="radiogroup" aria-label="Type">
-        {(["dream", "note"] as const).map((k) => (
-          <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}>
-            {KIND_LABEL[k]}
-          </button>
-        ))}
-      </div>
-      <label className="sr-only" htmlFor="entry-text">
-        Texte
-      </label>
-      <textarea
-        id="entry-text"
-        rows={3}
-        value={text}
-        placeholder={kind === "dream" ? "De quoi as-tu rêvé ?" : "Qu'as-tu en tête ?"}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <button className="primary" disabled={saving || !text.trim()}>
-        {saving ? "Enregistrement…" : `Enregistrer ${kind === "dream" ? "le rêve" : "la note"}`}
-      </button>
-    </form>
+    <div className="card">
+      <p className="card-title">Thèmes de la semaine</p>
+      {dreamReport ? (
+        <>
+          <p className="report-text">{dreamReport.summary}</p>
+          <div className="themes">
+            {dreamReport.themes.map((t) => (
+              <span key={t.name} className="theme">
+                {t.name}
+                <b className="num">{t.count}</b>
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="empty">Chaque dimanche, Claude lit tes rêves de la semaine et résume ici ce qui revient.</p>
+      )}
+    </div>
   );
 }
 
@@ -59,51 +48,58 @@ export function Thoughts() {
 
   return (
     <>
-      <section className="block">
-        <QuickEntry />
-        <p className="hint">Sur iPhone, l'Action Button envoie directement ici.</p>
-      </section>
+      <div style={{ marginTop: 12 }}>
+        <Segmented id="thoughts-filter" label="Afficher" options={FILTERS} value={filter} onChange={setFilter} />
+      </div>
 
-      <section className="block">
-        <div className="row heading">
+      {filter !== "note" && (
+        <section className="section" style={{ marginTop: 16 }}>
+          <WeeklyThemes />
+        </section>
+      )}
+
+      <section className="section">
+        <div className="section-header">
           <h2>Journal</h2>
-          <div className="chips">
-            {FILTERS.map((f) => (
-              <button key={f.id} className="chip" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
+          <span className="secondary num">{shown.length}</span>
         </div>
         {shown.length === 0 ? (
-          <p className="empty">Rien ici pour l'instant. Note ton prochain rêve au réveil, avant qu'il s'efface.</p>
+          <div className="card">
+            <p className="empty">
+              Rien ici pour l'instant. Note ton prochain rêve au réveil avec l'Action Button ou le bouton +, avant qu'il s'efface.
+            </p>
+          </div>
         ) : (
-          <ul className="list">
-            {shown.map((e) => (
-              <li key={e.id} className="entry" data-kind={e.kind}>
-                <div className="row">
-                  <span className="kind">{KIND_LABEL[e.kind]}</span>
-                  <time className="muted">
-                    {formatDay(e.createdAt)}, {formatTime(e.createdAt)}
-                  </time>
-                </div>
-                <p className="entry-text">{e.text}</p>
-                {e.tags.length > 0 && (
-                  <ul className="tags" aria-label="Tags">
-                    {e.tags.map((t) => (
-                      <li key={t}>#{t}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
+          groupByDay(shown, (e) => e.createdAt).map((group) => (
+            <div key={group.day}>
+              <h3 className="group-day">{group.day}</h3>
+              {group.items.map((e) => {
+                const { label, icon: Icon } = KIND[e.kind];
+                return (
+                  <article key={e.id} className={`card entry-card tone-${e.kind}`}>
+                    <p className="entry-meta">
+                      <span className="kind">
+                        <Icon size={16} weight="fill" aria-hidden />
+                        {label}
+                      </span>
+                      <time>{formatTime(e.createdAt)}</time>
+                    </p>
+                    <p className="entry-text">{e.text}</p>
+                    {e.tags.length > 0 && (
+                      <div className="tags">
+                        {e.tags.map((t) => (
+                          <span key={t} className="tag">
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          ))
         )}
-      </section>
-
-      <section className="block">
-        <h2>Thèmes de la semaine</h2>
-        <p className="empty">Chaque dimanche, Claude lit les rêves de la semaine et résume ici les thèmes qui reviennent.</p>
       </section>
     </>
   );
