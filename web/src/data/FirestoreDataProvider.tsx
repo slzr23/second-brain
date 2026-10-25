@@ -164,6 +164,20 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
         await deleteDoc(doc(db, "users", uid, "holdings", id));
       },
       ownerName,
+      async accountMovements(account) {
+        const snap = await getDocs(query(collection(db, "users", uid, "transactions"), where("account", "==", account)));
+        return snap.docs.map((d) => ({ date: toDate(d.get("date")), amountCents: d.get("amountCents") as number }));
+      },
+      async deleteAccount(name) {
+        const lines = await getDocs(query(collection(db, "users", uid, "transactions"), where("account", "==", name)));
+        const own = await getDocs(query(collection(db, "users", uid, "holdings"), where("group", "==", name)));
+        const refs = [...lines.docs, ...own.docs].map((d) => d.ref);
+        for (let i = 0; i < refs.length; i += 400) {
+          const batch = writeBatch(db);
+          for (const ref of refs.slice(i, i + 400)) batch.delete(ref);
+          await batch.commit();
+        }
+      },
       async existingTransactionIds(account) {
         const snap = await getDocs(query(collection(db, "users", uid, "transactions"), where("account", "==", account)));
         return new Set(snap.docs.map((d) => d.id));

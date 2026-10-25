@@ -52,6 +52,13 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         setHoldings((list) => list.filter((h) => h.id !== id));
       },
       ownerName: "Camille Martin",
+      async accountMovements(account) {
+        return transactions.filter((t) => t.account === account).map((t) => ({ date: t.date, amountCents: t.amountCents }));
+      },
+      async deleteAccount(name) {
+        setHoldings((list) => list.filter((h) => h.group !== name));
+        setTransactions((list) => list.filter((t) => t.account !== name));
+      },
       async existingTransactionIds(account) {
         return new Set(transactions.filter((t) => t.account === account).map((t) => t.id));
       },

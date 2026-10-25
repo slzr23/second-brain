@@ -551,3 +551,4 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 
 .list-row-body > span { display: block; }
 .list-row-body > .list-row-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hint.warn { color: var(--orange); }

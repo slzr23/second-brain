@@ -37,12 +37,15 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   // Read through a ref: the data source changes on every snapshot (including the
   // ones caused by the import itself), which must not restart the preview.
   const data = useRef({ ownerName, existingTransactionIds });
+  const guessed = useRef(false);
   data.current = { ownerName, existingTransactionIds };
 
   useEffect(() => {
     if (!open) {
       setFiles([]);
       setBalance("");
+      setAccount(ACCOUNTS[0]);
+      guessed.current = false;
       setState({ step: "pick" });
     }
   }, [open]);
@@ -61,6 +64,15 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
         const format = parsed[0].format;
 
         if (parsed[0].kind === "bank") {
+          // First file of this account: guess it from the content (a savings account only
+          // moves money to and from your own accounts, plus yearly interest).
+          const first = parsed[0].items;
+          const savingsLike = first.length > 0 && first.filter((t) => t.transfer || /int[eé]r[eê]ts/i.test(t.label)).length / first.length > 0.9;
+          if (savingsLike && account === ACCOUNTS[0] && !guessed.current) {
+            guessed.current = true;
+            setAccount("Livret A");
+            return;
+          }
           const items = parsed.flatMap((p) => (p.kind === "bank" ? p.items : []));
           const existing = await data.current.existingTransactionIds(ctx.account);
           if (!cancelled) setState({ step: "bank", format, items, summary: summarize(items, existing) });
@@ -94,8 +106,12 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
       if (balanceCents !== null) await saveAccountBalance(name, balanceCents, monthlyBalances(all, balanceCents));
       toast.success(items.length ? `${count.format(items.length)} opérations importées dans ${name}` : `Solde de ${name} mis à jour`);
       onOpenChange(false);
-    } catch {
-      setState({ step: "error", message: "L'import s'est interrompu. Relance-le : les opérations déjà écrites ne seront pas dupliquées." });
+    } catch (error) {
+      console.error(error);
+      setState({
+        step: "error",
+        message: `L'import s'est interrompu (${(error as Error).message}). Relance-le : les opérations déjà écrites ne seront pas dupliquées.`,
+      });
     }
   }
 
@@ -197,7 +213,11 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
                 />
                 <span className="secondary">€</span>
               </label>
-              <p className="hint">Avec le solde, le compte apparaît dans Patrimoine avec son évolution mois par mois.</p>
+              <p className={balanceCents === null ? "hint warn" : "hint"}>
+                {balanceCents === null
+                  ? "Sans le solde actuel, ce compte n'apparaîtra pas dans Patrimoine (tu pourras l'ajouter plus tard)."
+                  : "Le compte apparaîtra dans Patrimoine avec son évolution mois par mois."}
+              </p>
             </>
           )}
 

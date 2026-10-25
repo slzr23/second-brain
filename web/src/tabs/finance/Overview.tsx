@@ -1,8 +1,9 @@
 import NumberFlow from "@number-flow/react";
-import { CaretRight, Plus } from "@phosphor-icons/react";
+import { CaretRight, Plus, WarningCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Donut } from "../../charts/Donut";
 import { NetWorthChart } from "../../charts/NetWorthChart";
+import { BalanceSheet } from "../../components/BalanceSheet";
 import { HoldingSheet } from "../../components/HoldingSheet";
 import { Segmented } from "../../components/Segmented";
 import { useData } from "../../data/context";
@@ -26,6 +27,7 @@ export function Overview() {
   const { navigate } = useRoute();
   const [range, setRange] = useState<Range>("12");
   const [adding, setAdding] = useState(false);
+  const [balanceFor, setBalanceFor] = useState<string | null>(null);
 
   const groups = accountGroups(holdings);
   const total = groups.reduce((sum, g) => sum + g.cents, 0);
@@ -37,6 +39,10 @@ export function Overview() {
   const month = new Intl.DateTimeFormat("fr-FR", { month: "long" }).format(now);
   const pace = paceVsAverage(transactions, now);
   const toSort = transactions.filter((t) => isSpending(t) && !t.necessity && isRecent(t)).length;
+  // Bank accounts whose movements were imported but whose balance is still unknown.
+  const withoutBalance = [...new Set(transactions.filter((t) => t.source === "bank" && t.account).map((t) => t.account!))].filter(
+    (a) => !groups.some((g) => g.name === a),
+  );
 
   return (
     <>
@@ -104,6 +110,24 @@ export function Overview() {
         <div className="section-header">
           <h2>Comptes</h2>
         </div>
+        {withoutBalance.length > 0 && (
+          <ul className="list" style={{ marginBottom: 12 }}>
+            {withoutBalance.map((a) => (
+              <LinkRow key={a} onClick={() => setBalanceFor(a)}>
+                <span className="avatar tone-social" aria-hidden>
+                  <WarningCircle size={22} weight="fill" />
+                </span>
+                <span className="list-row-body">
+                  <span className="list-row-title">{a}</span>
+                  <span className="list-row-sub">Solde inconnu</span>
+                </span>
+                <span className="list-row-value" style={{ color: "var(--accent)", fontSize: 15 }}>
+                  Ajouter
+                </span>
+              </LinkRow>
+            ))}
+          </ul>
+        )}
         {groups.length > 0 && (
           <ul className="list">
             {groups.map((g, i) => (
@@ -134,6 +158,7 @@ export function Overview() {
       </section>
 
       <HoldingSheet holding={null} open={adding} onOpenChange={setAdding} />
+      <BalanceSheet account={balanceFor} open={balanceFor !== null} onOpenChange={(o) => !o && setBalanceFor(null)} />
     </>
   );
 }

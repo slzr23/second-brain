@@ -162,7 +162,11 @@ export interface DataSource {
   importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void): Promise<void>;
   /** Stores a bank account's balance and its history in Patrimoine. */
   saveAccountBalance(account: string, balanceCents: number, history: BalancePoint[]): Promise<void>;
+  /** Every stored movement of a bank account (not only the recent ones), to rebuild its balance history. */
+  accountMovements(account: string): Promise<{ date: Date; amountCents: number }[]>;
   /** Creates or replaces a holding computed by an import, under a stable id. */
   saveComputedHolding(id: string, holding: ComputedHolding): Promise<void>;
   deleteHolding(id: string): Promise<void>;
+  /** Removes an account everywhere: its lines in Patrimoine and its imported movements. */
+  deleteAccount(name: string): Promise<void>;
 }

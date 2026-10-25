@@ -1,6 +1,8 @@
 import NumberFlow from "@number-flow/react";
 import { ArrowsClockwise, Plus } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { useState } from "react";
+import { useRoute } from "../../lib/route";
 import { NetWorthChart } from "../../charts/NetWorthChart";
 import { HoldingSheet } from "../../components/HoldingSheet";
 import { Segmented } from "../../components/Segmented";
@@ -13,7 +15,9 @@ import { Gain, groupColor, holdingDetail, holdingGain, Movements } from "./share
 
 /** One account (Livret A, PEE, Crypto…): its value over time, its lines, its movements. */
 export function Account({ name }: { name: string }) {
-  const { holdings, transactions } = useData();
+  const { holdings, transactions, deleteAccount } = useData();
+  const { navigate } = useRoute();
+  const [confirming, setConfirming] = useState(false);
   const [range, setRange] = useState<Range>("12");
   const [editing, setEditing] = useState<Holding | null>(null);
   const [open, setOpen] = useState(false);
@@ -99,6 +103,35 @@ export function Account({ name }: { name: string }) {
           <Movements items={movements} empty={null} />
         </section>
       )}
+
+      <section className="section">
+        {confirming ? (
+          <div className="card">
+            <p style={{ fontSize: 15 }}>
+              Supprimer {name}, ses lignes{movements.length ? ` et ses ${movements.length} opérations importées` : ""} ? Tu pourras le réimporter ensuite.
+            </p>
+            <div className="sort-actions" style={{ marginTop: 12 }}>
+              <button className="tone-neutral" onClick={() => setConfirming(false)}>
+                Garder
+              </button>
+              <button
+                className="tone-superflu"
+                onClick={async () => {
+                  await deleteAccount(name);
+                  toast(`${name} supprimé`);
+                  navigate({ tab: "finance", path: [] });
+                }}
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="danger" onClick={() => setConfirming(true)}>
+            Supprimer ce compte
+          </button>
+        )}
+      </section>
 
       <HoldingSheet holding={editing} defaultGroup={name} open={open} onOpenChange={setOpen} />
     </>
