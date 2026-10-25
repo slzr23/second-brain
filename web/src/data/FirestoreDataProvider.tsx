@@ -1,12 +1,14 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   updateDoc,
   type DocumentData,
@@ -14,7 +16,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { db } from "../lib/firebase";
 import { DataContext } from "./context";
-import type { Activity, DataSource, DreamReport, Entry, Transaction, WeekStats } from "./types";
+import type { Activity, DataSource, DreamReport, Entry, Holding, HoldingInput, Transaction, WeekStats } from "./types";
 
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
@@ -63,11 +65,31 @@ const mapReport = (_id: string, d: DocumentData): DreamReport => ({
   themes: d.themes ?? [],
 });
 
+const mapHolding = (id: string, d: DocumentData): Holding => ({
+  id,
+  group: d.group,
+  name: d.name,
+  units: d.units,
+  unitPrice: d.unitPrice,
+  priceDate: d.priceDate instanceof Timestamp ? d.priceDate.toDate() : null,
+  priceSource: d.priceSource ?? "manual",
+  tracker: d.tracker ?? null,
+});
+
+/** A typed price becomes the new base: the evening refresh anchors it on that day's quote. */
+const holdingDoc = ({ trackerSymbol, ...input }: HoldingInput) => ({
+  ...input,
+  priceDate: serverTimestamp(),
+  priceSource: "manual",
+  tracker: trackerSymbol ? { symbol: trackerSymbol, baseUnitPrice: input.unitPrice, baseQuote: null } : null,
+});
+
 export function FirestoreDataProvider({ uid, weekId, children }: { uid: string; weekId: string; children: ReactNode }) {
   const entries = useLiveCollection(uid, "entries", "createdAt", mapEntry);
   const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction);
   const activities = useLiveCollection(uid, "activities", "date", mapActivity);
   const reports = useLiveCollection(uid, "dreamReports", "weekId", mapReport, 1);
+  const holdings = useLiveCollection(uid, "holdings", "group", mapHolding);
   const [week, setWeek] = useState<WeekStats | null>(null);
 
   useEffect(
@@ -86,6 +108,7 @@ export function FirestoreDataProvider({ uid, weekId, children }: { uid: string; 
       transactions: transactions ?? [],
       activities: activities ?? [],
       week,
+      holdings: holdings ?? [],
       async addEntry(kind, text) {
         await addDoc(collection(db, "users", uid, "entries"), {
           kind,
@@ -115,8 +138,15 @@ export function FirestoreDataProvider({ uid, weekId, children }: { uid: string; 
       async tagTransaction(id, necessity) {
         await updateDoc(doc(db, "users", uid, "transactions", id), { necessity });
       },
+      async saveHolding(id, input) {
+        if (id) await setDoc(doc(db, "users", uid, "holdings", id), holdingDoc(input));
+        else await addDoc(collection(db, "users", uid, "holdings"), holdingDoc(input));
+      },
+      async deleteHolding(id) {
+        await deleteDoc(doc(db, "users", uid, "holdings", id));
+      },
     }),
-    [uid, weekId, entries, transactions, activities, reports, week],
+    [uid, weekId, entries, transactions, activities, reports, week, holdings],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

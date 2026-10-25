@@ -40,6 +40,22 @@ service cloud.firestore {
           && request.resource.data.necessity in ['essentiel', 'social', 'superflu', null];
       }
 
+      // Savings and investments, typed in the app; prices of tracked ones are
+      // then refreshed every evening by the refreshPrices function.
+      function validHolding(d) {
+        return d.group is string && d.group.size() > 0 && d.group.size() <= 60
+          && d.name is string && d.name.size() > 0 && d.name.size() <= 80
+          && d.units is number && d.units >= 0
+          && d.unitPrice is number && d.unitPrice >= 0
+          && (d.tracker == null
+            || (d.tracker.symbol is string && d.tracker.symbol.size() > 0 && d.tracker.symbol.size() <= 20
+              && d.tracker.baseUnitPrice is number));
+      }
+      match /holdings/{docId} {
+        allow create, update: if isOwner(uid) && validHolding(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
       // Accepting or rejecting a training adjustment proposed by Claude.
       match /proposals/{docId} {
         allow update: if isOwner(uid)

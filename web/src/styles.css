@@ -378,7 +378,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   color: var(--tone); background: var(--sheet-field);
   box-shadow: inset 0 0 0 1px var(--separator);
 }
-.chip[aria-pressed="true"] { background: color-mix(in srgb, var(--tone) 16%, var(--card)); box-shadow: inset 0 0 0 1.5px var(--tone); }
+.chip[aria-pressed="true"], .chip[aria-checked="true"] { background: color-mix(in srgb, var(--tone) 16%, var(--card)); box-shadow: inset 0 0 0 1.5px var(--tone); }
 .primary {
   width: 100%; height: 52px; margin-top: 16px; border-radius: 16px;
   background: var(--accent); color: #fff; font-size: 17px; font-weight: 600;
@@ -420,3 +420,46 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   background: var(--card); border-radius: var(--radius);
   color: var(--accent); font-size: 17px; font-weight: 500;
 }
+
+/* ---------- Patrimoine ---------- */
+
+.tone-g0 { --tone: var(--blue); }
+.tone-g1 { --tone: var(--purple); }
+.tone-g2 { --tone: var(--orange); }
+.tone-g3 { --tone: var(--green); }
+.tone-g4 { --tone: var(--red); }
+.holding-row { width: 100%; text-align: left; }
+.holding-row .list-row-sub { display: flex; align-items: center; gap: 4px; }
+.group-head { display: flex; justify-content: space-between; align-items: baseline; padding: 18px 4px 6px; font-size: 13px; color: var(--label-2); }
+.group-head b { font-weight: 600; color: var(--label); font-variant-numeric: tabular-nums; }
+.add-row {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; margin-top: 12px; padding: 14px;
+  background: var(--card); border-radius: var(--radius);
+  color: var(--accent); font-size: 17px; font-weight: 500;
+}
+
+/* Form rows in sheets */
+.form-group { margin-top: 12px; border-radius: 14px; overflow: hidden; background: var(--sheet-field); }
+.form-group .field { border-radius: 0; }
+.form-group > * + * { border-top: 0.5px solid var(--separator); }
+.form-group .field + .field { margin-top: 0; }
+.field-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--sheet-field); padding: 0 16px; min-height: 50px; font-size: 17px;
+}
+.sheet > form > .field-row { margin-top: 12px; border-radius: 14px; }
+.field-row span:first-child { flex: none; }
+.field-row input {
+  flex: 1; min-width: 0; border: 0; outline: none; background: none; text-align: right;
+  font: inherit; color: var(--label); font-variant-numeric: tabular-nums;
+}
+.field-label { font-size: 13px; color: var(--label-2); margin: 16px 4px 0; }
+.chips.wrap { flex-wrap: wrap; margin-top: 8px; }
+.chips.wrap .chip { flex: 0 0 auto; padding: 0 16px; }
+.tone-neutral { --tone: var(--label-2); }
+.hint { font-size: 13px; color: var(--label-2); margin: 8px 4px 0; }
+.total-preview { text-align: center; font-size: 15px; color: var(--label-2); margin-top: 16px; }
+.total-preview b { color: var(--label); font-size: 17px; }
+.danger { display: block; width: 100%; height: 44px; margin-top: 8px; color: var(--red); font-size: 17px; }
+.list > li:not(:last-child) > .holding-row { border-bottom: 0.5px solid var(--separator); }

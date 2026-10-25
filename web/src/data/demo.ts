@@ -1,4 +1,4 @@
-import type { Activity, DreamReport, Entry, Transaction, WeekStats } from "./types";
+import type { Activity, DreamReport, Entry, Holding, Transaction, WeekStats } from "./types";
 import { isoWeekId } from "../lib/week";
 
 /** Fake but plausible data, so the app can be shown without any personal data. */
@@ -150,4 +150,23 @@ export const demoTransactions: Transaction[] = [
   tx(19, -39.99, "Vêtements", "superflu", "apple_pay", 15),
   tx(21, -88.8, "Pass Navigo", "essentiel", "bank", 9),
   tx(22, -620, "Loyer", "essentiel", "bank", 9),
+];
+
+const holding = (id: string, group: string, name: string, units: number, unitPrice: number, days: number, symbol: string | null = null): Holding => ({
+  id,
+  group,
+  name,
+  units,
+  unitPrice,
+  priceDate: daysAgo(days, 18, 30),
+  priceSource: symbol ? "auto" : "manual",
+  tracker: symbol ? { symbol, baseUnitPrice: unitPrice, baseQuote: unitPrice } : null,
+});
+
+export const demoHoldings: Holding[] = [
+  holding("h1", "Livret A", "Livret A", 1, 3_250, 2),
+  holding("h2", "Épargne salariale", "Fonds actions", 12.31, 102.45, 3),
+  holding("h3", "Épargne salariale", "Fonds monétaire", 2.1, 108.9, 3),
+  holding("h4", "Crypto", "Bitcoin", 0.01245, 61_230, 0, "BTC-EUR"),
+  holding("h5", "Crypto", "Ether", 0.21, 2_310, 0, "ETH-EUR"),
 ];

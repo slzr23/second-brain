@@ -41,6 +41,38 @@ export interface NewTransaction {
   necessity: Necessity | null;
 }
 
+/** A market quote a holding can follow (Yahoo Finance symbols). */
+export const TRACKERS = [
+  { symbol: "AIR.PA", label: "Action Airbus" },
+  { symbol: "BTC-EUR", label: "Bitcoin" },
+  { symbol: "ETH-EUR", label: "Ether" },
+] as const;
+
+/** A savings account or an investment line: Livret A, a PEE fund, some bitcoin… */
+export interface Holding {
+  id: string;
+  /** Where it is held: "PEE Amundi", "Crypto", "Livret A"… */
+  group: string;
+  name: string;
+  /** 1 for a plain balance (then unitPrice is the balance). */
+  units: number;
+  /** Euros per unit. */
+  unitPrice: number;
+  priceDate: Date | null;
+  priceSource: "manual" | "auto";
+  tracker: { symbol: string; baseUnitPrice: number; baseQuote: number | null } | null;
+}
+
+export interface HoldingInput {
+  group: string;
+  name: string;
+  units: number;
+  unitPrice: number;
+  trackerSymbol: string | null;
+}
+
+export const holdingValueCents = (h: Pick<Holding, "units" | "unitPrice">) => Math.round(h.units * h.unitPrice * 100);
+
 export interface Activity {
   id: string;
   name: string;
@@ -72,7 +104,11 @@ export interface DataSource {
   transactions: Transaction[];
   activities: Activity[];
   week: WeekStats | null;
+  holdings: Holding[];
   addEntry(kind: EntryKind, text: string): Promise<void>;
   addTransaction(transaction: NewTransaction): Promise<void>;
   tagTransaction(id: string, necessity: Necessity): Promise<void>;
+  /** Creates the holding when `id` is null. */
+  saveHolding(id: string | null, input: HoldingInput): Promise<void>;
+  deleteHolding(id: string): Promise<void>;
 }

@@ -1,5 +1,5 @@
 import NumberFlow from "@number-flow/react";
-import { ArrowDownLeft, Bank } from "@phosphor-icons/react";
+import { ArrowDownLeft } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { SpendArea } from "../charts/SpendArea";
 import { useData } from "../data/context";
 import { NECESSITIES, NECESSITY_LABEL, type Necessity, type Transaction } from "../data/types";
 import { formatEuros, formatTime, groupByDay } from "../lib/format";
+import { Wealth } from "./Wealth";
 
 const SOURCE_LABEL: Record<Transaction["source"], string> = {
   apple_pay: "Apple Pay",
@@ -158,6 +159,8 @@ export function Finance() {
       {toSort.length > 0 && <ToSort items={toSort} />}
       {expenses.length > 0 && <Split expenses={expenses} />}
 
+      <Wealth />
+
       <section className="section">
         <div className="section-header">
           <h2>Mouvements</h2>
@@ -194,17 +197,6 @@ export function Finance() {
         )}
       </section>
 
-      <section className="section">
-        <div className="section-header">
-          <h2>Patrimoine</h2>
-        </div>
-        <div className="card" style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <span className="avatar tone-income" aria-hidden>
-            <Bank size={20} weight="fill" />
-          </span>
-          <p className="empty">Comptes, livrets, actions et bitcoin arriveront ici avec la synchronisation bancaire.</p>
-        </div>
-      </section>
     </>
   );
 }
