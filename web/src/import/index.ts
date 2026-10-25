@@ -1,4 +1,5 @@
 import { bitstack } from "./bitstack";
+import { revolut } from "./revolut";
 import { caisseEpargne } from "./caisseEpargne";
 import type { CryptoTrade } from "./crypto";
 import { decodeBankFile } from "./csv";
@@ -9,7 +10,7 @@ export type { ImportedTransaction } from "./types";
 /** Bank account exports: they become transactions. */
 export const BANK_FORMATS: BankFormat[] = [caisseEpargne];
 /** Crypto platform exports: they become holdings in Patrimoine. */
-export const CRYPTO_FORMATS = [bitstack];
+export const CRYPTO_FORMATS = [bitstack, revolut];
 
 export type ParsedFile =
   | { kind: "bank"; format: string; items: ImportedTransaction[] }
@@ -21,9 +22,9 @@ export async function parseImportFile(buffer: ArrayBuffer, ctx: ParseContext): P
   const bank = BANK_FORMATS.find((f) => f.detect(header));
   if (bank) return { kind: "bank", format: bank.name, items: await bank.parse(text, ctx) };
   const crypto = CRYPTO_FORMATS.find((f) => f.detect(header));
-  if (crypto) return { kind: "crypto", format: crypto.name, trades: crypto.parse(text) };
+  if (crypto) return { kind: "crypto", format: crypto.name, trades: await crypto.parse(text) };
   throw new Error(
-    "Ce fichier n'est pas un export reconnu. Caisse d'Épargne : site web > Télécharger les opérations > format Excel (.csv). Bitstack : export de l'historique en CSV.",
+    "Ce fichier n'est pas un export reconnu. Caisse d'Épargne : site web > Télécharger les opérations > format Excel (.csv). Bitstack : export de l'historique en CSV. Revolut : Crypto > … > Relevé > Excel.",
   );
 }
 

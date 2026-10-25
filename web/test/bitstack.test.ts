@@ -27,22 +27,24 @@ describe("Bitstack export", () => {
   it("reads buys, sells, gifts and wallet withdrawals", () => {
     const trades = bitstack.parse(Y2025);
     expect(trades).toEqual([
-      { id: "bitstack_id-4", date: new Date("2025-12-28T21:00:20Z"), wallet: false, asset: "BTC", units: 0.0001, euroCents: 700, price: 70000 },
-      { id: "bitstack_id-3", date: new Date("2025-07-15T06:55:32Z"), wallet: true, asset: "BTC", units: -0.0002, euroCents: 0, price: 100000 },
-      { id: "bitstack_id-2", date: new Date("2025-05-24T13:34:52Z"), wallet: false, asset: "BTC", units: -0.001, euroCents: -9000, price: 90000 },
+      { id: "bitstack_id-4", date: new Date("2025-12-28T21:00:20Z"), platform: "Bitstack", wallet: false, asset: "BTC", units: 0.0001, euroCents: 700, price: 70000 },
+      { id: "bitstack_id-3", date: new Date("2025-07-15T06:55:32Z"), platform: "Bitstack", wallet: true, asset: "BTC", units: -0.0002, euroCents: 0, price: 100000 },
+      { id: "bitstack_id-2", date: new Date("2025-05-24T13:34:52Z"), platform: "Bitstack", wallet: false, asset: "BTC", units: -0.001, euroCents: -9000, price: 90000 },
     ]);
   });
 
   it("merges yearly files, drops duplicates and sums up the position", () => {
     const [btc] = cryptoPositions([...bitstack.parse(Y2024), ...bitstack.parse(Y2025)], new Date(2026, 0, 15));
     // 0.000001 gift + 0.002 bought − 0.001 sold − 0.0002 to wallet + 0.0001 bought
-    expect(btc.units).toBe(0.000901);
+    const [bitstackPos] = btc.platforms;
+    expect(bitstackPos.units).toBe(0.000901);
     expect(btc.walletUnits).toBe(0.0002);
-    expect(btc.investedCents).toBe(100_00 - 90_00 + 7_00);
+    expect(bitstackPos.investedCents).toBe(100_00 - 90_00 + 7_00);
     expect(btc.trades).toBe(5);
     expect(btc.lastPrice).toBe(70000);
-    expect(btc.history[0]).toEqual({ month: "2024-12", cents: Math.round(0.002001 * 50000 * 100) });
-    expect(btc.history.at(-1)).toEqual({ month: "2026-01", cents: Math.round(0.000901 * 70000 * 100) });
-    expect(btc.history).toHaveLength(14);
+    expect(bitstackPos.history[0]).toEqual({ month: "2024-12", cents: Math.round(0.002001 * 50000 * 100) });
+    expect(bitstackPos.history.at(-1)).toEqual({ month: "2026-01", cents: Math.round(0.000901 * 70000 * 100) });
+    expect(btc.walletHistory.at(-1)).toEqual({ month: "2026-01", cents: Math.round(0.0002 * 70000 * 100) });
+    expect(bitstackPos.history).toHaveLength(14);
   });
 });

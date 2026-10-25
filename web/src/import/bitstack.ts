@@ -45,7 +45,7 @@ export const bitstack = {
       const sentAsset = get(row, col.sentAsset);
       const description = get(row, col.description).toLowerCase();
       const wallet = description.includes("(crypto)");
-      const base = { id: `bitstack_${id}`, date: new Date(get(row, col.date)), wallet };
+      const base = { id: `bitstack_${id}`, platform: "Bitstack", date: new Date(get(row, col.date)), wallet };
 
       if (receivedAsset && !FIAT.has(receivedAsset)) {
         // Bought with euros, a gift, or coins coming back from your wallet.

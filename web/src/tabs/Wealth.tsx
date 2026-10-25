@@ -22,7 +22,7 @@ function detail(h: Holding): string {
 
 /** Gain since the money was put in, when the import knows how much that was. */
 function Gain({ holding }: { holding: Holding }) {
-  if (!holding.investedCents) return null;
+  if (!holding.investedCents || holding.investedCents <= 0) return null;
   const gain = holdingValueCents(holding) - holding.investedCents;
   const pct = Math.round((gain / holding.investedCents) * 100);
   return (

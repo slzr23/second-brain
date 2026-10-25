@@ -9,7 +9,7 @@ import { monthlyBalances } from "../import/history";
 import { formatEuros } from "../lib/format";
 
 const ACCOUNTS = ["Compte courant", "Livret A", "Livret Jeune"];
-const ASSET_NAMES: Record<string, string> = { BTC: "Bitcoin", ETH: "Ether" };
+const ASSET_NAMES: Record<string, string> = { BTC: "Bitcoin", ETH: "Ether", SOL: "Solana", USDT: "Tether", ENA: "Ethena" };
 const count = new Intl.NumberFormat("fr-FR");
 const coins = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 8 });
 const day = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -66,7 +66,9 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
           if (!cancelled) setState({ step: "bank", format, items, summary: summarize(items, existing) });
         } else {
           const trades: CryptoTrade[] = parsed.flatMap((p) => (p.kind === "crypto" ? p.trades : []));
-          if (!cancelled) setState({ step: "crypto", format, positions: cryptoPositions(trades) });
+          const positions = cryptoPositions(trades).filter((p) => p.walletUnits > 0 || p.platforms.some((pl) => pl.units > 0));
+          const formats = [...new Set(parsed.map((p) => p.format))].join(" et ");
+          if (!cancelled) setState({ step: "crypto", format: formats, positions });
         }
       } catch (error) {
         if (!cancelled) setState({ step: "error", message: (error as Error).message });
@@ -99,40 +101,37 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
 
   async function runCrypto() {
     if (state.step !== "crypto") return;
-    const { format, positions } = state;
+    const { positions } = state;
     setState({ step: "writing", done: 0, total: positions.length });
     try {
       for (const p of positions) {
         const name = ASSET_NAMES[p.asset] ?? p.asset;
         const price = p.lastPrice ?? 0;
-        const wallet = includeWallet ? p.walletUnits : 0;
-        const total = p.units + wallet;
-        // The money put in bought both the coins on the platform and those in the wallet.
-        const share = (units: number) => (total > 0 ? Math.round((p.investedCents * units) / total) : null);
-        if (p.units > 0) {
-          await saveComputedHolding(`crypto_${slug(format)}_${slug(p.asset)}`, {
+        for (const platform of p.platforms) {
+          if (platform.units <= 0) continue;
+          await saveComputedHolding(`crypto_${slug(platform.platform)}_${slug(p.asset)}`, {
             group: "Crypto",
-            name: `${name} (${format})`,
-            units: p.units,
+            name: `${name} (${platform.platform})`,
+            units: platform.units,
             unitPrice: price,
             trackerSymbol: `${p.asset}-EUR`,
-            investedCents: share(p.units),
-            history: p.history,
+            investedCents: platform.investedCents,
+            history: platform.history,
           });
         }
-        if (wallet > 0) {
+        if (includeWallet && p.walletUnits > 0) {
           await saveComputedHolding(`crypto_wallet_${slug(p.asset)}`, {
             group: "Crypto",
             name: `${name} (wallet)`,
-            units: wallet,
+            units: p.walletUnits,
             unitPrice: price,
             trackerSymbol: `${p.asset}-EUR`,
-            investedCents: share(wallet),
+            investedCents: null,
             history: p.walletHistory,
           });
         }
       }
-      toast.success(`Crypto ${format} ajoutée au patrimoine`);
+      toast.success(`Crypto ${state.format} ajoutée au patrimoine`);
       onOpenChange(false);
     } catch {
       setState({ step: "error", message: "L'enregistrement a échoué. Vérifie ta connexion et réessaie." });
@@ -161,7 +160,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
             <span>{fileLabel}</span>
             <input type="file" multiple accept=".csv,text/csv" className="sr-only" onChange={(e) => setFiles([...(e.target.files ?? [])])} />
           </label>
-          {state.step === "pick" && <p className="hint">Relevé Caisse d'Épargne ou historique Bitstack.</p>}
+          {state.step === "pick" && <p className="hint">Relevé Caisse d'Épargne, historique Bitstack ou relevé crypto Revolut.</p>}
           {state.step === "reading" && <p className="hint">Lecture…</p>}
           {state.step === "error" && (
             <p className="error" style={{ marginTop: 12 }}>
@@ -233,39 +232,47 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
             </div>
           )}
 
-          {state.step === "crypto" &&
-            state.positions.map((p) => (
-              <div key={p.asset} className="form-group">
-                <div className="field-row">
-                  <span>Période</span>
-                  <span className="value">
-                    {day.format(p.from)} au {day.format(p.to)}
-                  </span>
-                </div>
-                <div className="field-row">
-                  <span>Sur {state.format}</span>
-                  <span className="value num">
-                    {coins.format(p.units)} {p.asset}
-                  </span>
-                </div>
-                {p.walletUnits > 0 && (
-                  <div className="field-row">
-                    <span>Envoyé vers ton wallet</span>
+          {state.step === "crypto" && (
+            <div className="form-group">
+              <div className="field-row">
+                <span>Période</span>
+                <span className="value">
+                  {day.format(new Date(Math.min(...state.positions.map((p) => p.from.getTime()))))} au{" "}
+                  {day.format(new Date(Math.max(...state.positions.map((p) => p.to.getTime()))))}
+                </span>
+              </div>
+              {state.positions.flatMap((p) => [
+                ...p.platforms
+                  .filter((pl) => pl.units > 0)
+                  .map((pl) => (
+                    <div className="field-row" key={`${p.asset}-${pl.platform}`}>
+                      <span>
+                        {ASSET_NAMES[p.asset] ?? p.asset} <span className="secondary">{pl.platform}</span>
+                      </span>
+                      <span className="value num">
+                        {coins.format(pl.units)} {p.asset}
+                      </span>
+                    </div>
+                  )),
+                p.walletUnits > 0 ? (
+                  <div className="field-row" key={`${p.asset}-wallet`}>
+                    <span>
+                      {ASSET_NAMES[p.asset] ?? p.asset} <span className="secondary">wallet</span>
+                    </span>
                     <span className="value num">
                       {coins.format(p.walletUnits)} {p.asset}
                     </span>
                   </div>
-                )}
-                <div className="field-row">
-                  <span>Investi net</span>
-                  <span className="value num">{formatEuros(p.investedCents)}</span>
-                </div>
-                <div className="field-row">
-                  <span>Dernier cours connu</span>
-                  <span className="value num">{p.lastPrice ? formatEuros(Math.round(p.lastPrice * 100)) : "–"}</span>
-                </div>
+                ) : null,
+              ])}
+              <div className="field-row">
+                <span>Investi net</span>
+                <span className="value num">
+                  {formatEuros(state.positions.reduce((sum, p) => sum + p.platforms.reduce((s2, pl) => s2 + pl.investedCents, 0), 0))}
+                </span>
               </div>
-            ))}
+            </div>
+          )}
           {state.step === "crypto" && state.positions.some((p) => p.walletUnits > 0) && (
             <>
               <div className="chips wrap" role="radiogroup" aria-label="Wallet" style={{ marginTop: 12 }}>
@@ -273,10 +280,13 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
                   Compter le wallet
                 </button>
                 <button type="button" role="radio" className="chip tone-neutral" aria-checked={!includeWallet} onClick={() => setIncludeWallet(false)}>
-                  {state.format} seulement
+                  Plateformes seulement
                 </button>
               </div>
-              <p className="hint">Les bitcoins retirés vers ton wallet sont toujours à toi, sauf si tu les as dépensés depuis.</p>
+              <p className="hint">
+                Les cryptos retirées vers ton wallet sont toujours à toi, sauf si tu les as dépensées depuis. Importe toutes tes plateformes ensemble :
+                ce qui passe par ton wallet d'une plateforme à l'autre n'est alors compté qu'une fois.
+              </p>
             </>
           )}
 
