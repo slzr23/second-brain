@@ -3,14 +3,13 @@ import { ArrowsClockwise, Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useRoute } from "../../lib/route";
-import { NetWorthChart } from "../../charts/NetWorthChart";
+import { HoldingIcon } from "../../components/AssetIcon";
 import { HoldingSheet } from "../../components/HoldingSheet";
-import { Segmented } from "../../components/Segmented";
+import { ValueChart } from "../../components/ValueChart";
 import { useData } from "../../data/context";
 import { holdingValueCents, type Holding } from "../../data/types";
 import { accountGroups, netWorthSeries } from "../../lib/finance";
 import { formatEuros } from "../../lib/format";
-import { cut, RANGES, type Range } from "./Overview";
 import { Gain, groupColor, holdingDetail, holdingGain, Movements } from "./shared";
 
 /** One account (Livret A, PEE, Crypto…): its value over time, its lines, its movements. */
@@ -18,7 +17,6 @@ export function Account({ name }: { name: string }) {
   const { holdings, transactions, deleteAccount } = useData();
   const { navigate } = useRoute();
   const [confirming, setConfirming] = useState(false);
-  const [range, setRange] = useState<Range>("12");
   const [editing, setEditing] = useState<Holding | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -47,9 +45,8 @@ export function Account({ name }: { name: string }) {
           {series.length > 1 ? (
             <>
               <div style={{ marginTop: 14 }}>
-                <Segmented id="account-range" label="Période" options={RANGES} value={range} onChange={setRange} />
+                <ValueChart id="account" holdings={group.holdings} series={[{ key: name, label: name, color }]} />
               </div>
-              <NetWorthChart points={cut(series, range)} series={[{ key: name, label: name, color }]} />
             </>
           ) : (
             <p className="empty" style={{ marginTop: 8 }}>
@@ -67,9 +64,7 @@ export function Account({ name }: { name: string }) {
           {group.holdings.map((h) => (
             <li key={h.id}>
               <button className="list-row holding-row" onClick={() => edit(h)}>
-                <span className="avatar" style={{ ["--tone" as string]: color }} aria-hidden>
-                  {h.name.trim().charAt(0).toUpperCase()}
-                </span>
+                <HoldingIcon holding={h} color={color} />
                 <span className="list-row-body">
                   <span className="list-row-title" style={{ display: "block" }}>
                     {h.name}

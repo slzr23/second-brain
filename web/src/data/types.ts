@@ -1,5 +1,6 @@
 import type { BalancePoint } from "../import/history";
 import type { ImportedTransaction } from "../import/types";
+import type { DaySnapshot } from "../lib/finance";
 
 /** Client-side shapes of the Firestore documents (see README > Modèle de données). */
 
@@ -150,6 +151,8 @@ export interface DataSource {
   activities: Activity[];
   week: WeekStats | null;
   holdings: Holding[];
+  /** Evening values per account, stored by the server, newest first. */
+  netWorthDays: DaySnapshot[];
   addEntry(kind: EntryKind, text: string): Promise<void>;
   addTransaction(transaction: NewTransaction): Promise<void>;
   tagTransaction(id: string, necessity: Necessity): Promise<void>;

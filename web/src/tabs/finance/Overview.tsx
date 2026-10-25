@@ -2,10 +2,9 @@ import NumberFlow from "@number-flow/react";
 import { CaretRight, Plus, WarningCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Donut } from "../../charts/Donut";
-import { NetWorthChart } from "../../charts/NetWorthChart";
 import { BalanceSheet } from "../../components/BalanceSheet";
 import { HoldingSheet } from "../../components/HoldingSheet";
-import { Segmented } from "../../components/Segmented";
+import { ValueChart } from "../../components/ValueChart";
 import { useData } from "../../data/context";
 import { isSpending } from "../../data/types";
 import { accountGroups, netWorthSeries, paceVsAverage } from "../../lib/finance";
@@ -13,19 +12,13 @@ import { formatEuros } from "../../lib/format";
 import { useRoute } from "../../lib/route";
 import { Gain, groupColor, isRecent, LinkRow } from "./shared";
 
-export const RANGES = [
-  { id: "6", label: "6 mois" },
-  { id: "12", label: "1 an" },
-  { id: "all", label: "Tout" },
-] as const;
-export type Range = (typeof RANGES)[number]["id"];
-export const cut = <T,>(list: T[], range: Range) => (range === "all" ? list : list.slice(-Number(range)));
 
 /** Finance home: total wealth and where it sits, then a door to each account and to spending. */
 export function Overview() {
   const { holdings, transactions } = useData();
   const { navigate } = useRoute();
-  const [range, setRange] = useState<Range>("12");
+  // Accounts shown on the evolution chart; empty means all of them.
+  const [shown, setShown] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [balanceFor, setBalanceFor] = useState<string | null>(null);
 
@@ -79,8 +72,28 @@ export function Overview() {
             <h2>Évolution</h2>
           </div>
           <div className="card">
-            <Segmented id="networth-range" label="Période" options={RANGES} value={range} onChange={setRange} />
-            <NetWorthChart points={cut(series, range)} series={groups.map((g) => ({ key: g.name, label: g.name, color: colors[g.name] }))} />
+            <div className="filter-chips" role="group" aria-label="Comptes affichés">
+              <button className="filter-chip" aria-pressed={shown.length === 0} onClick={() => setShown([])}>
+                Tout
+              </button>
+              {groups.map((g) => (
+                <button
+                  key={g.name}
+                  className="filter-chip"
+                  style={{ ["--tone" as string]: colors[g.name] }}
+                  aria-pressed={shown.includes(g.name)}
+                  onClick={() => setShown((list) => (list.includes(g.name) ? list.filter((n) => n !== g.name) : [...list, g.name]))}
+                >
+                  <i />
+                  {g.name}
+                </button>
+              ))}
+            </div>
+            <ValueChart
+              id="networth"
+              holdings={holdings.filter((h) => shown.length === 0 || shown.includes(h.group))}
+              series={groups.filter((g) => shown.length === 0 || shown.includes(g.name)).map((g) => ({ key: g.name, label: g.name, color: colors[g.name] }))}
+            />
           </div>
         </section>
       )}

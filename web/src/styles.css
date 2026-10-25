@@ -482,7 +482,10 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .field-row .value { margin-left: auto; text-align: right; color: var(--label-2); }
 .section-header .header-action { color: var(--accent); font-size: 17px; display: inline-flex; align-items: center; gap: 4px; }
 .list-row-value.muted { color: var(--label-2); font-weight: 400; }
-.sheet-scroll { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
+.sheet-tall { max-height: 92dvh; display: flex; flex-direction: column; }
+/* Scroll inside the sheet, not the sheet itself: vaul moves the sheet, and a scrolled sheet stops painting below the fold. */
+.sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter) 4px; }
+.file-pick { position: relative; }
 .value-stack { display: flex; flex-direction: column; align-items: flex-end; }
 .gain { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .gain.up { color: var(--green); }
@@ -552,3 +555,20 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .list-row-body > span { display: block; }
 .list-row-body > .list-row-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hint.warn { color: var(--orange); }
+.segmented.compact button { height: 28px; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* Account filter above the evolution chart */
+.filter-chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px; scrollbar-width: none; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; border-radius: 999px;
+  font-size: 14px; font-weight: 500; color: var(--label-2);
+  background: var(--fill);
+}
+.filter-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--tone, var(--label-2)); }
+.filter-chip[aria-pressed="true"] { color: var(--label); background: color-mix(in srgb, var(--tone, var(--label)) 18%, var(--card)); box-shadow: inset 0 0 0 1.5px var(--tone, var(--label)); }
+
+/* Crypto logos */
+.avatar.logo { background: none; overflow: hidden; }
+.avatar.logo img { width: 40px; height: 40px; display: block; }

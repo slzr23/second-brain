@@ -25,6 +25,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       activities: demoActivities,
       week: demoWeek,
       holdings,
+      netWorthDays: [],
       async addEntry(kind, text) {
         const entry: Entry = { id: crypto.randomUUID(), kind, text, tags: [], createdAt: new Date() };
         setEntries((list) => [entry, ...list]);
