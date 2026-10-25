@@ -486,6 +486,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 /* Scroll inside the sheet, not the sheet itself: vaul moves the sheet, and a scrolled sheet stops painting below the fold. */
 .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter) 4px; }
 .file-pick { position: relative; }
+.file-pick.dragging { background: color-mix(in srgb, var(--accent) 16%, var(--sheet-field)); border-style: solid; }
+.file-list { list-style: none; margin: 10px 0 0; padding: 0; background: var(--sheet-field); border-radius: 14px; }
+.file-list li { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px 0 16px; font-size: 15px; }
+.file-list li + li { border-top: 0.5px solid var(--separator); }
+.file-list span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-list button { display: grid; place-items: center; width: 36px; height: 36px; color: var(--label-2); }
 .value-stack { display: flex; flex-direction: column; align-items: flex-end; }
 .gain { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .gain.up { color: var(--green); }
