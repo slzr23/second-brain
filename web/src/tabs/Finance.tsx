@@ -1,11 +1,12 @@
 import NumberFlow from "@number-flow/react";
-import { ArrowDownLeft } from "@phosphor-icons/react";
+import { ArrowDownLeft, ArrowsLeftRight, FileArrowUp } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SpendArea } from "../charts/SpendArea";
+import { ImportSheet } from "../components/ImportSheet";
 import { useData } from "../data/context";
-import { NECESSITIES, NECESSITY_LABEL, type Necessity, type Transaction } from "../data/types";
+import { isIncome, isSpending, NECESSITIES, NECESSITY_LABEL, type Necessity, type Transaction } from "../data/types";
 import { formatEuros, formatTime, groupByDay } from "../lib/format";
 import { Wealth } from "./Wealth";
 
@@ -15,27 +16,47 @@ const SOURCE_LABEL: Record<Transaction["source"], string> = {
   manual: "Saisie",
 };
 
-const toneOf = (t: Transaction) => (t.amountCents > 0 ? "income" : (t.necessity ?? "untagged"));
+const toneOf = (t: Transaction) => (t.transfer ? "neutral" : t.amountCents > 0 ? "income" : (t.necessity ?? "untagged"));
+const RECENT_DAYS = 30;
+const isSavingsAccount = (account: string | null) => !!account && /livret|ldds?|pel\b|épargne|epargne/i.test(account);
+const isRecent = (t: Transaction) => Date.now() - t.date.getTime() < RECENT_DAYS * 86_400_000;
+
+/** "Social, 21:00" / "Épargne, Compte courant" */
+function describe(t: Transaction): string {
+  const what = t.transfer
+    ? t.transfer === "savings"
+      ? "Épargne"
+      : "Entre tes comptes"
+    : t.amountCents > 0
+      ? "Entrée"
+      : t.necessity
+        ? NECESSITY_LABEL[t.necessity]
+        : isRecent(t)
+          ? "À trier"
+          : "Non classé";
+  // Bank lines carry no time of day.
+  return `${what}, ${t.source === "bank" ? (t.account ?? "Banque") : formatTime(t.date)}`;
+}
 const initial = (label: string) => label.trim().charAt(0).toUpperCase();
 
 function Avatar({ t }: { t: Transaction }) {
   return (
     <span className={`avatar tone-${toneOf(t)}`} aria-hidden>
-      {t.amountCents > 0 ? <ArrowDownLeft size={20} weight="bold" /> : initial(t.label)}
+      {t.transfer ? <ArrowsLeftRight size={20} weight="bold" /> : t.amountCents > 0 ? <ArrowDownLeft size={20} weight="bold" /> : initial(t.label)}
     </span>
   );
 }
 
-function Amount({ cents }: { cents: number }) {
+function Amount({ cents, muted = false }: { cents: number; muted?: boolean }) {
   return (
-    <span className={`list-row-value num${cents > 0 ? " positive" : ""}`}>
+    <span className={`list-row-value num${muted ? " muted" : cents > 0 ? " positive" : ""}`}>
       {cents > 0 ? "+" : ""}
       {formatEuros(cents)}
     </span>
   );
 }
 
-function Month({ expenses, incomeCents, toSortCount }: { expenses: Transaction[]; incomeCents: number; toSortCount: number }) {
+function Month({ expenses, incomeCents, savedCents, toSortCount }: { expenses: Transaction[]; incomeCents: number; savedCents: number; toSortCount: number }) {
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daily = Array.from({ length: daysInMonth }, () => 0);
@@ -51,6 +72,7 @@ function Month({ expenses, incomeCents, toSortCount }: { expenses: Transaction[]
       </p>
       <div className="hero-sub">
         {incomeCents > 0 && <span className="pill tone-income">+{formatEuros(incomeCents)} reçus</span>}
+        {savedCents > 0 && <span className="pill tone-essentiel">{formatEuros(savedCents)} mis de côté</span>}
         {toSortCount > 0 && (
           <span className="pill tone-social">
             {toSortCount} {toSortCount > 1 ? "dépenses" : "dépense"} à trier
@@ -143,17 +165,22 @@ const RECENT = 8;
 export function Finance() {
   const { transactions } = useData();
   const [showAll, setShowAll] = useState(false);
+  const [importing, setImporting] = useState(false);
   const shown = showAll ? transactions : transactions.slice(0, RECENT);
   const now = new Date();
   const thisMonth = transactions.filter((t) => t.date.getMonth() === now.getMonth() && t.date.getFullYear() === now.getFullYear());
-  const expenses = thisMonth.filter((t) => t.amountCents < 0);
-  const incomeCents = thisMonth.filter((t) => t.amountCents > 0).reduce((sum, t) => sum + t.amountCents, 0);
-  const toSort = transactions.filter((t) => t.amountCents < 0 && t.necessity === null);
+  const expenses = thisMonth.filter(isSpending);
+  const incomeCents = thisMonth.filter(isIncome).reduce((sum, t) => sum + t.amountCents, 0);
+  // Money put on savings this month (net of withdrawals), seen from the current account.
+  // Lines of the savings accounts themselves are skipped: they mirror the same transfers.
+  const savedCents = -thisMonth.filter((t) => t.transfer === "savings" && !isSavingsAccount(t.account)).reduce((sum, t) => sum + t.amountCents, 0);
+  // Only recent lines are worth sorting by hand; older ones stay "Non classé".
+  const toSort = transactions.filter((t) => isSpending(t) && t.necessity === null && isRecent(t));
 
   return (
     <>
       <section className="section" style={{ marginTop: 12 }}>
-        <Month expenses={expenses} incomeCents={incomeCents} toSortCount={toSort.length} />
+        <Month expenses={expenses} incomeCents={incomeCents} savedCents={savedCents} toSortCount={toSort.length} />
       </section>
 
       {toSort.length > 0 && <ToSort items={toSort} />}
@@ -164,6 +191,10 @@ export function Finance() {
       <section className="section">
         <div className="section-header">
           <h2>Mouvements</h2>
+          <button className="header-action" onClick={() => setImporting(true)}>
+            <FileArrowUp size={18} weight="bold" aria-hidden />
+            Importer
+          </button>
         </div>
         {transactions.length === 0 ? (
           <div className="card">
@@ -179,11 +210,9 @@ export function Finance() {
                     <Avatar t={t} />
                     <div className="list-row-body">
                       <p className="list-row-title">{t.label}</p>
-                      <p className="list-row-sub">
-                        {t.amountCents > 0 ? "Entrée" : t.necessity ? NECESSITY_LABEL[t.necessity] : "À trier"}, {formatTime(t.date)}
-                      </p>
+                      <p className="list-row-sub">{describe(t)}</p>
                     </div>
-                    <Amount cents={t.amountCents} />
+                    <Amount cents={t.amountCents} muted={!!t.transfer} />
                   </li>
                 ))}
               </ul>
@@ -197,6 +226,7 @@ export function Finance() {
         )}
       </section>
 
+      <ImportSheet open={importing} onOpenChange={setImporting} />
     </>
   );
 }

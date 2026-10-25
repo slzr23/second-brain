@@ -88,7 +88,7 @@ export default function RealApp() {
   if (user === undefined) return <div className="signin" aria-busy="true" />;
   if (!user) return <SignIn />;
   return (
-    <FirestoreDataProvider uid={user.uid} weekId={isoWeekId()}>
+    <FirestoreDataProvider uid={user.uid} ownerName={user.displayName} weekId={isoWeekId()}>
       <Shell demo={false} accountAction={signOutButton} />
     </FirestoreDataProvider>
   );

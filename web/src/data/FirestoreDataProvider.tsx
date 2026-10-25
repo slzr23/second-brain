@@ -10,6 +10,9 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
+  where,
+  writeBatch,
+  getDocs,
   updateDoc,
   type DocumentData,
 } from "firebase/firestore";
@@ -46,6 +49,9 @@ const mapTransaction = (id: string, d: DocumentData): Transaction => ({
   merchant: d.merchant ?? null,
   necessity: d.necessity ?? null,
   source: d.source,
+  account: d.account ?? null,
+  transfer: d.transfer ?? null,
+  bankCategory: d.bankCategory ?? null,
 });
 
 const mapActivity = (id: string, d: DocumentData): Activity => ({
@@ -84,7 +90,7 @@ const holdingDoc = ({ trackerSymbol, ...input }: HoldingInput) => ({
   tracker: trackerSymbol ? { symbol: trackerSymbol, baseUnitPrice: input.unitPrice, baseQuote: null } : null,
 });
 
-export function FirestoreDataProvider({ uid, weekId, children }: { uid: string; weekId: string; children: ReactNode }) {
+export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { uid: string; ownerName: string | null; weekId: string; children: ReactNode }) {
   const entries = useLiveCollection(uid, "entries", "createdAt", mapEntry);
   const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction);
   const activities = useLiveCollection(uid, "activities", "date", mapActivity);
@@ -145,8 +151,31 @@ export function FirestoreDataProvider({ uid, weekId, children }: { uid: string; 
       async deleteHolding(id) {
         await deleteDoc(doc(db, "users", uid, "holdings", id));
       },
+      ownerName,
+      async existingTransactionIds(account) {
+        const snap = await getDocs(query(collection(db, "users", uid, "transactions"), where("account", "==", account)));
+        return new Set(snap.docs.map((d) => d.id));
+      },
+      async importTransactions(items, onProgress) {
+        // Firestore batches hold at most 500 writes.
+        for (let i = 0; i < items.length; i += 400) {
+          const batch = writeBatch(db);
+          for (const { id, date, ...item } of items.slice(i, i + 400)) {
+            batch.set(doc(db, "users", uid, "transactions", id), {
+              ...item,
+              date: Timestamp.fromDate(date),
+              currency: "EUR",
+              merchant: null,
+              source: "bank",
+              createdAt: serverTimestamp(),
+            });
+          }
+          await batch.commit();
+          onProgress?.(Math.min(i + 400, items.length));
+        }
+      },
     }),
-    [uid, weekId, entries, transactions, activities, reports, week, holdings],
+    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

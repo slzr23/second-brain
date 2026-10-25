@@ -26,15 +26,20 @@ service cloud.firestore {
       }
 
       // Expenses typed in the app, and sorting one (essentiel / social / superflu).
+      function validTransaction(d) {
+        return d.amountCents is int && d.amountCents != 0
+          && d.label is string && d.label.size() > 0 && d.label.size() <= 200
+          && d.necessity in ['essentiel', 'social', 'superflu', null];
+      }
       match /transactions/{docId} {
-        allow create: if isOwner(uid)
-          && request.resource.data.source == 'manual'
-          && request.resource.data.amountCents is int
-          && request.resource.data.amountCents != 0
-          && request.resource.data.label is string
-          && request.resource.data.label.size() > 0
-          && request.resource.data.label.size() <= 200
-          && request.resource.data.necessity in ['essentiel', 'social', 'superflu', null];
+        // Typed in the app, or imported from a bank export (with a stable id).
+        allow create: if isOwner(uid) && validTransaction(request.resource.data)
+          && (request.resource.data.source == 'manual'
+            || (request.resource.data.source == 'bank'
+              && request.resource.data.date is timestamp
+              && request.resource.data.account is string && request.resource.data.account.size() <= 60
+              && request.resource.data.transfer in ['savings', 'internal', null]));
+        allow delete: if isOwner(uid);
         allow update: if isOwner(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['necessity'])
           && request.resource.data.necessity in ['essentiel', 'social', 'superflu', null];

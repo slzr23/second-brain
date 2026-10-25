@@ -29,7 +29,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         setEntries((list) => [entry, ...list]);
       },
       async addTransaction({ amountCents, label, necessity }) {
-        const t: Transaction = { id: crypto.randomUUID(), amountCents, label, necessity, date: new Date(), merchant: null, source: "manual" };
+        const t: Transaction = { id: crypto.randomUUID(), amountCents, label, necessity, date: new Date(), merchant: null, source: "manual", account: null, transfer: null, bankCategory: null };
         setTransactions((list) => [t, ...list]);
       },
       async tagTransaction(id, necessity) {
@@ -47,6 +47,15 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       },
       async deleteHolding(id) {
         setHoldings((list) => list.filter((h) => h.id !== id));
+      },
+      ownerName: "Camille Martin",
+      async existingTransactionIds(account) {
+        return new Set(transactions.filter((t) => t.account === account).map((t) => t.id));
+      },
+      async importTransactions(items, onProgress) {
+        const added: Transaction[] = items.map((i) => ({ ...i, merchant: null, source: "bank" }));
+        setTransactions((list) => [...list, ...added].sort((a, b) => b.date.getTime() - a.date.getTime()));
+        onProgress?.(items.length);
       },
     }),
     [loading, entries, transactions, holdings],

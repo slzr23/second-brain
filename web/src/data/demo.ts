@@ -130,6 +130,9 @@ const tx = (days: number, euros: number, label: string, necessity: Transaction["
   merchant: null,
   necessity,
   source,
+  account: source === "bank" ? "Compte courant" : null,
+  transfer: null,
+  bankCategory: null,
 });
 
 export const demoTransactions: Transaction[] = [

@@ -1,3 +1,5 @@
+import type { ImportedTransaction } from "../import/types";
+
 /** Client-side shapes of the Firestore documents (see README > Modèle de données). */
 
 export type EntryKind = "dream" | "note";
@@ -33,7 +35,16 @@ export interface Transaction {
   merchant: string | null;
   necessity: Necessity | null;
   source: "manual" | "apple_pay" | "bank";
+  /** Bank account it comes from, for imported lines ("Compte courant"). */
+  account: string | null;
+  /** Money moved between your own accounts: never counted as spending or income. */
+  transfer: "savings" | "internal" | null;
+  bankCategory: string | null;
 }
+
+/** Spending and income ignore money that only moves between your own accounts. */
+export const isSpending = (t: Transaction) => t.amountCents < 0 && !t.transfer;
+export const isIncome = (t: Transaction) => t.amountCents > 0 && !t.transfer;
 
 export interface NewTransaction {
   amountCents: number;
@@ -110,5 +121,10 @@ export interface DataSource {
   tagTransaction(id: string, necessity: Necessity): Promise<void>;
   /** Creates the holding when `id` is null. */
   saveHolding(id: string | null, input: HoldingInput): Promise<void>;
+  /** First and last name of the account holder, used to spot transfers to yourself. */
+  ownerName: string | null;
+  /** Ids of the lines already stored for this account, to import only new ones. */
+  existingTransactionIds(account: string): Promise<Set<string>>;
+  importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void): Promise<void>;
   deleteHolding(id: string): Promise<void>;
 }
