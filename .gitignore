@@ -11,7 +11,6 @@ functions/lib/
 functions/.env*
 !functions/.env.example
 functions/.secret.local
-.firebaserc
 .firebase/
 *-debug.log
 firebase-debug*.log
@@ -22,3 +21,4 @@ ui-debug.log
 .DS_Store
 .vscode/
 .idea/
+ingest-token.txt

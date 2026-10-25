@@ -88,17 +88,21 @@ npm run dev:demo
 
 ### Avec Firebase
 
-Prérequis : Node 22, un projet Firebase (Firestore, Authentication avec Google, Functions, donc l'offre Blaze), et la CLI `firebase`.
+Prérequis : Node 22, la CLI `firebase`, et un projet Firebase en offre Blaze avec Firestore et l'authentification Google activés. `.firebaserc` et `web/.env.production` pointent vers mon projet : pour le tien, lance `firebase use --add` et remplace les valeurs.
 
 ```bash
-cp .firebaserc.example .firebaserc         # puis mets l'id de ton projet
-cp web/.env.example web/.env.local          # config web de ton projet Firebase
-cp functions/.env.example functions/.env.<id-du-projet>   # ton uid Firebase
+echo "VITE_FIREBASE_API_KEY=<clé>" > web/.env.local   # gardée hors de git
+(cd functions && npm ci) && (cd web && npm ci)
 
-openssl rand -base64 32 | firebase functions:secrets:set INGEST_TOKEN --data-file=-
-
-(cd functions && npm install) && (cd web && npm install)
+openssl rand -base64 32 | tee ingest-token.txt | firebase functions:secrets:set INGEST_TOKEN --data-file=-
 firebase deploy
+```
+
+Connecte-toi une fois sur l'app, récupère ton uid (console Firebase > Authentication), puis :
+
+```bash
+echo "OWNER_UID=<uid>" > functions/.env.<id-du-projet>
+firebase deploy --only functions
 ```
 
 Ensuite, configure les raccourcis iPhone : [docs/action-button.md](docs/action-button.md).

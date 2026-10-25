@@ -9,8 +9,12 @@ import { ingestPayload } from "./schema";
 
 /** Long random string pasted into the iOS Shortcut (Authorization: Bearer …). */
 const INGEST_TOKEN = defineSecret("INGEST_TOKEN");
-/** Firebase Auth uid of the owner: everything lands under users/{OWNER_UID}. */
-const OWNER_UID = defineString("OWNER_UID");
+/**
+ * Firebase Auth uid of the owner: everything lands under users/{OWNER_UID}.
+ * Empty on the very first deploy (nobody has signed in yet): set it in
+ * functions/.env.<project-id> after the first sign-in, then redeploy.
+ */
+const OWNER_UID = defineString("OWNER_UID", { default: "" });
 
 /** Constant-time comparison; hashing first makes both buffers the same length. */
 function tokenMatches(received: string, expected: string): boolean {
@@ -37,6 +41,12 @@ export const ingest = onRequest({ secrets: [INGEST_TOKEN], cors: false }, async 
     return;
   }
 
+  const owner = OWNER_UID.value();
+  if (!owner) {
+    res.status(503).json({ ok: false, error: "OWNER_UID n'est pas encore configuré" });
+    return;
+  }
+
   const parsed = ingestPayload.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: z.prettifyError(parsed.error) });
@@ -53,7 +63,7 @@ export const ingest = onRequest({ secrets: [INGEST_TOKEN], cors: false }, async 
 
   const ref = await getFirestore()
     .collection("users")
-    .doc(OWNER_UID.value())
+    .doc(owner)
     .collection(record.collection)
     .add(record.data);
 
