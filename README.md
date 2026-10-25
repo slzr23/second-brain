@@ -27,7 +27,9 @@ Les stats de course sont dans Garmin et Strava, les rêves dans les notes du té
 | Sport | Compte rendu de Claude après chaque sortie, ajustement des séances de Google Agenda | 🚧 |
 | Sport | Sommeil et FC au repos via Apple Santé | 🚧 |
 | Pensées | Synthèse hebdomadaire des thèmes de mes rêves | 🚧 |
-| Finance | Comptes bancaires, livrets, actions et bitcoin à jour | 🚧 |
+| Finance | Import de l'historique bancaire et crypto, patrimoine et évolution par compte | ✅ |
+| Finance | Cours des actions et des cryptos à jour chaque soir | ✅ |
+| Finance | Synchronisation bancaire automatique | 🚧 |
 
 ## Architecture
 
@@ -119,11 +121,15 @@ Ce dépôt est public, mes données non. Elles vivent uniquement dans Firestore,
 
 ## Feuille de route
 
+Le détail, mis à jour à chaque livraison, est dans [docs/BACKLOG.md](docs/BACKLOG.md).
+
 1. ~~Socle : PWA, Firebase, capture depuis l'Action Button~~
-2. Sport : webhook Strava, statistiques, compte rendu Claude, ajustements dans Google Agenda
-3. Sport : sommeil et FC au repos depuis Apple Santé
-4. Finance : Enable Banking pour les comptes, cours des actions et du bitcoin, patrimoine
-5. Pensées : synthèse hebdomadaire des rêves
+2. ~~Finance : import de l'historique, patrimoine, cours quotidiens~~
+3. Finance : tri de l'historique des dépenses par Claude
+4. Sport : historique Strava, statistiques, compte rendu Claude, ajustements dans Google Agenda
+5. Sport : sommeil et FC au repos depuis Apple Santé
+6. Pensées : synthèse hebdomadaire des rêves
+7. Finance : synchronisation bancaire automatique
 
 ## Stack
 
