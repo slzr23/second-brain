@@ -130,7 +130,7 @@ export const RANGES = [
 ] as const;
 export type Range = (typeof RANGES)[number]["id"];
 
-/** Up to 6 months, one point a day; beyond, one point a month. */
+/** Up to 6 months, axis labels show days; beyond, months. */
 export const isDaily = (range: Range) => {
   const days = RANGES.find((r) => r.id === range)!.days;
   return days !== null && days <= 183;
@@ -167,56 +167,92 @@ export interface DaySnapshot {
   byGroup: Record<string, number>;
 }
 
+const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime() - 1;
+
 /**
- * Value of each account over the chosen range.
- * Daily points, for each account and day, take the first source that knows:
+ * Value of one line at any moment, read from its end-of-month history and its
+ * live value, with straight lines in between (no stairs at each month change).
+ * A line whose past is unknown (added by hand this month) keeps its current value
+ * back in time rather than appearing from nowhere today. One with a real history
+ * is worth nothing before it starts.
+ */
+export function holdingValueAt(h: Holding, now = new Date()): (time: number) => number {
+  const live = holdingValueCents(h);
+  const current = monthKey(now);
+  const past = h.history.filter((p) => p.month < current);
+  if (past.length === 0) return () => live;
+  const anchors = past.map((p) => ({ t: endOfDay(new Date(Number(p.month.slice(0, 4)), Number(p.month.slice(5, 7)), 0)), cents: p.cents }));
+  const first = past[0].month;
+  anchors.unshift({ t: new Date(Number(first.slice(0, 4)), Number(first.slice(5, 7)) - 1, 1).getTime(), cents: 0 });
+  anchors.push({ t: now.getTime(), cents: live });
+  return (time) => {
+    if (time < anchors[0].t) return 0;
+    if (time >= anchors[anchors.length - 1].t) return live;
+    let i = 1;
+    while (anchors[i].t < time) i++;
+    const a = anchors[i - 1];
+    const b = anchors[i];
+    return Math.round(a.cents + ((b.cents - a.cents) * (time - a.t)) / (b.t - a.t || 1));
+  };
+}
+
+/**
+ * Value of each account over the chosen range: a point a day up to one year,
+ * a point a week beyond. For each account and day, the first source that knows:
  *  1. today's live value;
- *  2. the evening snapshot of that day;
- *  3. for a bank account, its balance rebuilt from the movements after that day;
- *  4. otherwise the month's value from the account's history.
- * Longer ranges use the monthly series.
+ *  2. the evening snapshot stored by the server that day;
+ *  3. for a bank account, today's balance minus the movements since that day (exact);
+ *  4. otherwise its lines read from their monthly history (see holdingValueAt).
  */
 export function valueSeries(holdings: Holding[], transactions: Transaction[], snapshots: DaySnapshot[], range: Range, now = new Date()): ValuePoint[] {
   const spec = RANGES.find((r) => r.id === range)!;
-  if (!isDaily(range)) {
-    const from = spec.days === null ? null : monthKey(new Date(now.getTime() - spec.days * 86_400_000));
-    return netWorthSeries(holdings, now)
-      .filter((p) => from === null || p.month >= from)
-      .map((p) => ({ key: p.month, date: new Date(Number(p.month.slice(0, 4)), Number(p.month.slice(5, 7)) - 1, 1), total: p.total, byGroup: p.byGroup }));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const first = firstDataDate(holdings, now);
+  let start = spec.days === null ? first : new Date(today.getFullYear(), today.getMonth(), today.getDate() - spec.days + 1);
+  if (spec.days !== null && spec.days > 366 && start < first) start = first;
+  const step = spec.days !== null && spec.days <= 366 ? 1 : 7;
+
+  const dates: Date[] = [];
+  for (let back = 0; ; back += step) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - back);
+    if (d < start) break;
+    dates.unshift(d);
   }
 
   const groups = [...new Set(holdings.map((h) => h.group))];
   const byDay = new Map(snapshots.map((s) => [s.day, s.byGroup]));
-  const today = dayKey(now);
-  const live = (group: string) => holdings.filter((h) => h.group === group).reduce((sum, h) => sum + holdingValueCents(h), 0);
+  const live = Object.fromEntries(groups.map((g) => [g, holdings.filter((h) => h.group === g).reduce((sum, h) => sum + holdingValueCents(h), 0)]));
   const isBank = (group: string) => holdings.some((h) => h.group === group && h.id.startsWith("account_"));
-  const bankMoves = new Map(groups.filter(isBank).map((g) => [g, transactions.filter((t) => t.account === g)]));
+  // Bank movements, newest first, to undo them walking back in time.
+  const moves = new Map(
+    groups.filter(isBank).map((g) => [g, transactions.filter((t) => t.account === g).sort((a, b) => b.date.getTime() - a.date.getTime())]),
+  );
+  const readers = new Map(groups.map((g) => [g, holdings.filter((h) => h.group === g).map((h) => holdingValueAt(h, now))]));
 
-  const points: ValuePoint[] = [];
-  for (let back = spec.days! - 1; back >= 0; back--) {
-    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back);
+  const bankAt = new Map<string, Map<string, number>>();
+  for (const [group, list] of moves) {
+    const values = new Map<string, number>();
+    let balance = live[group];
+    let i = 0;
+    for (let k = dates.length - 1; k >= 0; k--) {
+      const end = endOfDay(dates[k]);
+      while (i < list.length && list[i].date.getTime() > end) balance -= list[i++].amountCents;
+      values.set(dayKey(dates[k]), balance);
+    }
+    bankAt.set(group, values);
+  }
+
+  return dates.map((date) => {
     const key = dayKey(date);
-    const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-    const month = monthKey(date);
     const byGroup: Record<string, number> = {};
     for (const group of groups) {
-      if (key === today) byGroup[group] = live(group);
+      if (date.getTime() === today.getTime()) byGroup[group] = live[group];
       else if (byDay.get(key)?.[group] !== undefined) byGroup[group] = byDay.get(key)![group];
-      else if (bankMoves.has(group)) {
-        byGroup[group] = live(group) - bankMoves.get(group)!.filter((t) => t.date >= endOfDay).reduce((sum, t) => sum + t.amountCents, 0);
-      } else {
-        byGroup[group] = holdings
-          .filter((h) => h.group === group)
-          .reduce((sum, h) => {
-            if (month === monthKey(now)) return sum + holdingValueCents(h);
-            const known = h.history.filter((p) => p.month <= month);
-            return sum + (known.length ? known[known.length - 1].cents : 0);
-          }, 0);
-      }
+      else if (bankAt.has(group)) byGroup[group] = bankAt.get(group)!.get(key)!;
+      else byGroup[group] = readers.get(group)!.reduce((sum, at) => sum + at(endOfDay(date)), 0);
     }
-    points.push({ key, date, total: Object.values(byGroup).reduce((a, b) => a + b, 0), byGroup });
-  }
-  return points;
+    return { key, date, total: Object.values(byGroup).reduce((a, b) => a + b, 0), byGroup };
+  });
 }
 
 /* ----------------------------- Spending buckets ------------------------------ */

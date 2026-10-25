@@ -10,6 +10,7 @@ import {
   paceVsAverage,
   spendingBuckets,
   valueSeries,
+  holdingValueAt,
 } from "../src/lib/finance";
 
 const holding = (over: Partial<Holding>): Holding => ({
@@ -139,9 +140,27 @@ describe("time ranges", () => {
     expect(week.at(-1)!.total).toBe(700_00); // today: live value
   });
 
-  it("uses monthly points for a year and more", () => {
-    const series = valueSeries([holding({ history: [{ month: "2024-01", cents: 1 }, { month: "2026-01", cents: 2 }] })], [], [], "1A", now);
-    expect(series.map((p) => p.key)).toEqual(["2026-01", "2026-10"]);
+  it("draws a year day by day and longer ranges week by week", () => {
+    const h = [holding({ history: [{ month: "2023-08", cents: 1 }] })];
+    expect(valueSeries(h, [], [], "1A", now)).toHaveLength(366);
+    const all = valueSeries(h, [], [], "Tout", now);
+    expect(all.at(-1)!.key).toBe("2026-10-25");
+    expect(all.at(-1)!.date.getTime() - all.at(-2)!.date.getTime()).toBe(7 * 86_400_000);
+  });
+
+  it("goes in a straight line between two months instead of jumping", () => {
+    // 100 € at the end of August, 200 € at the end of September.
+    const h = holding({ units: 1, unitPrice: 200, history: [{ month: "2026-08", cents: 100_00 }, { month: "2026-09", cents: 200_00 }] });
+    const at = holdingValueAt(h, now);
+    expect(at(new Date(2026, 7, 31, 23, 59).getTime())).toBeCloseTo(100_00, -2);
+    expect(at(new Date(2026, 8, 15, 12).getTime())).toBeGreaterThan(140_00);
+    expect(at(new Date(2026, 8, 15, 12).getTime())).toBeLessThan(160_00);
+    expect(at(new Date(2026, 6, 15).getTime())).toBe(0); // before its history starts
+  });
+
+  it("keeps a line with no past at its current value", () => {
+    const pee = holding({ units: 10, unitPrice: 200, history: [{ month: "2026-10", cents: 2000_00 }] });
+    expect(holdingValueAt(pee, now)(new Date(2025, 0, 1).getTime())).toBe(2000_00);
   });
 });
 
@@ -161,5 +180,14 @@ describe("spending buckets", () => {
       ["2025-01-01", 100_00],
       ["2026-01-01", 22_00],
     ]);
+  });
+});
+
+describe("value axis", () => {
+  it("uses round ticks, from zero when accounts are compared", async () => {
+    const { valueScale } = await import("../src/charts/NetWorthChart");
+    expect(valueScale([450_00, 5_120_00], true).ticks).toEqual([0, 2_000_00, 4_000_00, 6_000_00]);
+    expect(valueScale([-150_00, 1_900_00], true).ticks).toEqual([-1_000_00, 0, 1_000_00, 2_000_00]);
+    expect(valueScale([7_600_00, 11_800_00], false)).toMatchObject({ min: 6_000_00, max: 12_000_00 });
   });
 });

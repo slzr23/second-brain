@@ -578,3 +578,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 /* Crypto logos */
 .avatar.logo { background: none; overflow: hidden; }
 .avatar.logo img { width: 40px; height: 40px; display: block; }
+.range-change { margin: 2px 2px 4px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.range-change.up { color: var(--green); }
+.range-change.down { color: var(--red); }
+.range-change .secondary { font-weight: 400; }

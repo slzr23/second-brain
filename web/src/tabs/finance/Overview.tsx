@@ -92,7 +92,11 @@ export function Overview() {
             <ValueChart
               id="networth"
               holdings={holdings.filter((h) => shown.length === 0 || shown.includes(h.group))}
-              series={groups.filter((g) => shown.length === 0 || shown.includes(g.name)).map((g) => ({ key: g.name, label: g.name, color: colors[g.name] }))}
+              series={
+                shown.length === 0
+                  ? [{ key: "total", label: "Patrimoine", color: "var(--accent)" }]
+                  : groups.filter((g) => shown.includes(g.name)).map((g) => ({ key: g.name, label: g.name, color: colors[g.name] }))
+              }
             />
           </div>
         </section>

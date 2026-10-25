@@ -31,6 +31,8 @@ Dernière mise à jour : 25 octobre 2026
 
 - **Nouvelles sorties après l'import Strava** : l'accord d'API Strava interdit d'envoyer les données à une IA, et le programme développeur Garmin est fermé. Piste : récupérer les entraînements depuis Apple Santé.
 - **PEE Amundi** : pas d'API. Les fonds suivent le cours de l'action Airbus, mais leurs parts doivent être mises à jour à la main de temps en temps.
+- **Historique du PEE** : il n'est connu que depuis sa saisie, donc les graphiques reportent sa valeur actuelle dans le passé. Un export des opérations Amundi (versements, abondements) permettrait de reconstruire la vraie courbe.
+- **Courbe crypto exacte** : les mois passés sont valorisés au prix du dernier achat, avec une ligne droite d'un mois à l'autre. Pour suivre le vrai cours jour par jour, il faudrait récupérer l'historique des cours côté serveur.
 - **Ethena (ENA)** : vérifier que Yahoo Finance fournit un cours `ENA-EUR`, sinon la ligne garde son dernier prix connu.
 
 ## 🔧 Dette technique
@@ -56,7 +58,7 @@ Dernière mise à jour : 25 octobre 2026
 - Import des relevés Caisse d'Épargne (compte courant, Livret A), avec détection des virements entre mes comptes
 - Import des historiques Bitstack et Revolut, positions calculées par plateforme et wallet ; plusieurs fichiers ajoutés un par un ou par glisser-déposer
 - Patrimoine global avec répartition en anneau
-- Évolution filtrable par compte, de 1 semaine à tout l'historique
+- Évolution façon Revolut : une courbe du patrimoine total, ou une courbe par compte à sa vraie valeur (sans empilement), axe en euros, variation sur la période, un point par jour jusqu'à 1 an
 - Une page par compte, logos des cryptos
 - Page Dépenses : mois en cours comparé aux 3 précédents, barres par semaine, mois ou année
 - Cours mis à jour chaque soir (Airbus, cryptos) et patrimoine enregistré jour par jour
