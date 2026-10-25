@@ -1,3 +1,4 @@
+import type { BalancePoint } from "../import/history";
 import type { ImportedTransaction } from "../import/types";
 
 /** Client-side shapes of the Firestore documents (see README > Modèle de données). */
@@ -72,7 +73,18 @@ export interface Holding {
   priceDate: Date | null;
   priceSource: "manual" | "auto";
   tracker: { symbol: string; baseUnitPrice: number; baseQuote: number | null } | null;
+  /** Bank accounts only: end-of-month balances rebuilt from the imported movements. */
+  history: BalancePoint[];
 }
+
+/** Id of the holding that carries a bank account's balance ("Livret A" → "account_livret-a"). */
+export const accountHoldingId = (account: string) =>
+  `account_${account
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
 
 export interface HoldingInput {
   group: string;
@@ -126,5 +138,7 @@ export interface DataSource {
   /** Ids of the lines already stored for this account, to import only new ones. */
   existingTransactionIds(account: string): Promise<Set<string>>;
   importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void): Promise<void>;
+  /** Stores a bank account's balance and its history in Patrimoine. */
+  saveAccountBalance(account: string, balanceCents: number, history: BalancePoint[]): Promise<void>;
   deleteHolding(id: string): Promise<void>;
 }

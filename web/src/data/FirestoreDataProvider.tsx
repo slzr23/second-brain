@@ -19,7 +19,8 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { db } from "../lib/firebase";
 import { DataContext } from "./context";
-import type { Activity, DataSource, DreamReport, Entry, Holding, HoldingInput, Transaction, WeekStats } from "./types";
+import { mergeHistory } from "../import/history";
+import { accountHoldingId, type Activity, type DataSource, type DreamReport, type Entry, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
 
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
@@ -80,6 +81,7 @@ const mapHolding = (id: string, d: DocumentData): Holding => ({
   priceDate: d.priceDate instanceof Timestamp ? d.priceDate.toDate() : null,
   priceSource: d.priceSource ?? "manual",
   tracker: d.tracker ?? null,
+  history: d.history ?? [],
 });
 
 /** A typed price becomes the new base: the evening refresh anchors it on that day's quote. */
@@ -145,7 +147,8 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
         await updateDoc(doc(db, "users", uid, "transactions", id), { necessity });
       },
       async saveHolding(id, input) {
-        if (id) await setDoc(doc(db, "users", uid, "holdings", id), holdingDoc(input));
+        // merge keeps fields the form does not edit, such as a bank account's history.
+        if (id) await setDoc(doc(db, "users", uid, "holdings", id), holdingDoc(input), { merge: true });
         else await addDoc(collection(db, "users", uid, "holdings"), holdingDoc(input));
       },
       async deleteHolding(id) {
@@ -173,6 +176,20 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
           await batch.commit();
           onProgress?.(Math.min(i + 400, items.length));
         }
+      },
+      async saveAccountBalance(account, balanceCents, history) {
+        const id = accountHoldingId(account);
+        const previous = holdings?.find((h) => h.id === id)?.history ?? [];
+        await setDoc(doc(db, "users", uid, "holdings", id), {
+          group: account,
+          name: account,
+          units: 1,
+          unitPrice: balanceCents / 100,
+          priceDate: serverTimestamp(),
+          priceSource: "manual",
+          tracker: null,
+          history: mergeHistory(previous, history),
+        });
       },
     }),
     [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings],

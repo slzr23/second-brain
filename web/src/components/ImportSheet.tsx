@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { useData } from "../data/context";
-import { parseBankFile, summarize, type ImportSummary } from "../import";
+import { parseBankFile, summarize, type ImportedTransaction, type ImportSummary } from "../import";
+import { monthlyBalances } from "../import/history";
 import { formatEuros } from "../lib/format";
 
 const ACCOUNTS = ["Compte courant", "Livret A", "Livret Jeune"];
@@ -13,13 +14,14 @@ const day = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", y
 type State =
   | { step: "pick" }
   | { step: "reading" }
-  | { step: "ready"; format: string; summary: ImportSummary }
+  | { step: "ready"; format: string; items: ImportedTransaction[]; summary: ImportSummary }
   | { step: "writing"; done: number; total: number }
   | { step: "error"; message: string };
 
 /** Import a bank export: pick the file, check what is new, then write it. */
 export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { ownerName, existingTransactionIds, importTransactions } = useData();
+  const { ownerName, existingTransactionIds, importTransactions, saveAccountBalance } = useData();
+  const [balance, setBalance] = useState("");
   const [account, setAccount] = useState(ACCOUNTS[0]);
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<State>({ step: "pick" });
@@ -31,6 +33,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   useEffect(() => {
     if (!open) {
       setFile(null);
+      setBalance("");
       setState({ step: "pick" });
     }
   }, [open]);
@@ -44,7 +47,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
       try {
         const { format, items } = await parseBankFile(await file.arrayBuffer(), { account: account.trim(), ownerName: data.current.ownerName });
         const existing = await data.current.existingTransactionIds(account.trim());
-        if (!cancelled) setState({ step: "ready", format, summary: summarize(items, existing) });
+        if (!cancelled) setState({ step: "ready", format, items, summary: summarize(items, existing) });
       } catch (error) {
         if (!cancelled) setState({ step: "error", message: (error as Error).message });
       }
@@ -54,13 +57,24 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
     };
   }, [file, account]);
 
+  const balanceCents = balance.trim() ? Math.round(Number(balance.replace(/[\s\u00a0\u202f]/g, "").replace(",", ".")) * 100) : null;
+  const balanceValid = balanceCents === null || Number.isFinite(balanceCents);
+
   async function run() {
-    if (state.step !== "ready") return;
+    if (state.step !== "ready" || !balanceValid) return;
+    const name = account.trim();
     const items = state.summary.fresh;
+    const all = state.items;
     setState({ step: "writing", done: 0, total: items.length });
     try {
-      await importTransactions(items, (done) => setState({ step: "writing", done, total: items.length }));
-      toast.success(`${count.format(items.length)} opérations importées dans ${account.trim()}`);
+      if (items.length) await importTransactions(items, (done) => setState({ step: "writing", done, total: items.length }));
+      // The whole file (not only the new lines) rebuilds the balance history.
+      if (balanceCents !== null) await saveAccountBalance(name, balanceCents, monthlyBalances(all, balanceCents));
+      toast.success(
+        items.length
+          ? `${count.format(items.length)} opérations importées dans ${name}`
+          : `Solde de ${name} mis à jour`,
+      );
       onOpenChange(false);
     } catch {
       setState({ step: "error", message: "L'import s'est interrompu. Relance-le : les opérations déjà écrites ne seront pas dupliquées." });
@@ -108,6 +122,19 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
             <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
 
+          <label className="field-row" style={{ marginTop: 12, borderRadius: 14 }}>
+            <span>Solde actuel</span>
+            <input
+              inputMode="decimal"
+              placeholder="facultatif"
+              aria-label="Solde actuel du compte, en euros"
+              value={balance}
+              onChange={(e) => setBalance(e.target.value.replace(/[^\d.,-]/g, ""))}
+            />
+            <span className="secondary">€</span>
+          </label>
+          <p className="hint">Avec le solde, le compte apparaît dans Patrimoine avec son évolution mois par mois.</p>
+
           {state.step === "reading" && <p className="hint">Lecture du fichier…</p>}
           {state.step === "error" && <p className="error" style={{ marginTop: 12 }}>{state.message}</p>}
 
@@ -150,8 +177,14 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
               Import… {count.format(state.done)} / {count.format(state.total)}
             </button>
           ) : (
-            <button className="primary" disabled={!s || s.fresh.length === 0} onClick={run}>
-              {!s ? "Importer" : s.fresh.length === 0 ? "Tout est déjà importé" : `Importer ${count.format(s.fresh.length)} opérations`}
+            <button className="primary" disabled={!s || !balanceValid || (s.fresh.length === 0 && balanceCents === null)} onClick={run}>
+              {!s
+                ? "Importer"
+                : s.fresh.length > 0
+                  ? `Importer ${count.format(s.fresh.length)} opérations`
+                  : balanceCents !== null
+                    ? "Mettre à jour le solde"
+                    : "Tout est déjà importé"}
             </button>
           )}
           {s && s.fresh.length > 0 && (

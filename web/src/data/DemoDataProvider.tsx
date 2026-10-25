@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DataContext } from "./context";
 import { demoActivities, demoDreamReport, demoEntries, demoHoldings, demoTransactions, demoWeek } from "./demo";
-import type { DataSource, Entry, Holding, Transaction } from "./types";
+import { mergeHistory } from "../import/history";
+import { accountHoldingId, type DataSource, type Entry, type Holding, type Transaction } from "./types";
 
 /** In-memory data, so the demo is interactive without touching Firebase. */
 export function DemoDataProvider({ children }: { children: ReactNode }) {
@@ -42,6 +43,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
           priceDate: new Date(),
           priceSource: "manual",
           tracker: trackerSymbol ? { symbol: trackerSymbol, baseUnitPrice: input.unitPrice, baseQuote: null } : null,
+          history: holdings.find((h) => h.id === id)?.history ?? [],
         };
         setHoldings((list) => (id ? list.map((h) => (h.id === id ? next : h)) : [...list, next]));
       },
@@ -56,6 +58,24 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         const added: Transaction[] = items.map((i) => ({ ...i, merchant: null, source: "bank" }));
         setTransactions((list) => [...list, ...added].sort((a, b) => b.date.getTime() - a.date.getTime()));
         onProgress?.(items.length);
+      },
+      async saveAccountBalance(account, balanceCents, history) {
+        const id = accountHoldingId(account);
+        setHoldings((list) => {
+          const previous = list.find((h) => h.id === id);
+          const next: Holding = {
+            id,
+            group: account,
+            name: account,
+            units: 1,
+            unitPrice: balanceCents / 100,
+            priceDate: new Date(),
+            priceSource: "manual",
+            tracker: null,
+            history: mergeHistory(previous?.history ?? [], history),
+          };
+          return previous ? list.map((h) => (h.id === id ? next : h)) : [...list, next];
+        });
       },
     }),
     [loading, entries, transactions, holdings],

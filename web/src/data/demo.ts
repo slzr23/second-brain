@@ -164,6 +164,7 @@ const holding = (id: string, group: string, name: string, units: number, unitPri
   priceDate: daysAgo(days, 18, 30),
   priceSource: symbol ? "auto" : "manual",
   tracker: symbol ? { symbol, baseUnitPrice: unitPrice, baseQuote: unitPrice } : null,
+  history: [],
 });
 
 export const demoHoldings: Holding[] = [
