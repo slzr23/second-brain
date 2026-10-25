@@ -135,7 +135,7 @@ const tx = (days: number, euros: number, label: string, necessity: Transaction["
   bankCategory: null,
 });
 
-export const demoTransactions: Transaction[] = [
+const recentTransactions: Transaction[] = [
   tx(0, -4.2, "Boulangerie", null, "apple_pay", 8),
   tx(1, -18.5, "Bières avec les potes", "social", "manual", 21),
   tx(2, -63.42, "Courses de la semaine", "essentiel", "manual", 19),
@@ -155,6 +155,38 @@ export const demoTransactions: Transaction[] = [
   tx(22, -620, "Loyer", "essentiel", "bank", 9),
 ];
 
+/** Deterministic pseudo-random numbers, so the demo looks the same on every load. */
+function seeded(seed: number) {
+  return () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+}
+
+/** Five earlier months of plausible spending, for the comparisons and the bars. */
+function pastMonths(): Transaction[] {
+  const rand = seeded(42);
+  const list: Transaction[] = [];
+  const today = new Date();
+  for (let m = 1; m <= 5; m++) {
+    const first = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    const at = (day: number, euros: number, label: string, necessity: Transaction["necessity"]) => {
+      const date = new Date(first.getFullYear(), first.getMonth(), day, 12);
+      list.push({ ...tx(0, euros, label, necessity, "bank"), date });
+    };
+    at(2, -620, "Loyer", "essentiel");
+    at(3, -88.8, "Pass Navigo", "essentiel");
+    at(5, 920, "Salaire", null);
+    for (let d = 4; d <= days; d += 3) at(d, -(25 + rand() * 45), "Courses", "essentiel");
+    for (let d = 6; d <= days; d += 5) at(d, -(12 + rand() * 30), rand() > 0.5 ? "Bar" : "Resto", "social");
+    for (let d = 9; d <= days; d += 9) at(d, -(8 + rand() * 40), "Achat en ligne", "superflu");
+  }
+  return list;
+}
+
+export const demoTransactions: Transaction[] = [...recentTransactions, ...pastMonths()].sort((a, b) => b.date.getTime() - a.date.getTime());
+
 const holding = (id: string, group: string, name: string, units: number, unitPrice: number, days: number, symbol: string | null = null): Holding => ({
   id,
   group,
@@ -168,10 +200,25 @@ const holding = (id: string, group: string, name: string, units: number, unitPri
   investedCents: null,
 });
 
+/** Month-by-month values ending at `end`, drifting by `step` per month (for the charts). */
+function history(months: number, end: number, step: number, wobble = 0) {
+  const rand = seeded(end);
+  const today = new Date();
+  return Array.from({ length: months }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - (months - 1 - i), 1);
+    const back = months - 1 - i;
+    return {
+      month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      cents: Math.max(0, Math.round((end - step * back + (rand() - 0.5) * wobble) * 100)),
+    };
+  });
+}
+
 export const demoHoldings: Holding[] = [
-  holding("h1", "Livret A", "Livret A", 1, 3_250, 2),
+  { ...holding("h1", "Livret A", "Livret A", 1, 3_250, 2), history: history(18, 3_250, 90, 300) },
   holding("h2", "Épargne salariale", "Fonds actions", 12.31, 102.45, 3),
   holding("h3", "Épargne salariale", "Fonds monétaire", 2.1, 108.9, 3),
-  holding("h4", "Crypto", "Bitcoin", 0.01245, 61_230, 0, "BTC-EUR"),
-  holding("h5", "Crypto", "Ether", 0.21, 2_310, 0, "ETH-EUR"),
+  { ...holding("h4", "Crypto", "Bitcoin", 0.01245, 61_230, 0, "BTC-EUR"), history: history(18, 762, 30, 260), investedCents: 520_00 },
+  { ...holding("h5", "Crypto", "Ether", 0.21, 2_310, 0, "ETH-EUR"), history: history(10, 485, 20, 140), investedCents: 410_00 },
+  { ...holding("h6", "Compte courant", "Compte courant", 1, 412.3, 1), history: history(18, 412, 0, 500) },
 ];

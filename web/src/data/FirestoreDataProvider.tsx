@@ -25,12 +25,19 @@ import { accountHoldingId, trackerFor, type Activity, type DataSource, type Drea
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
 /** Live subscription to users/{uid}/{name}, newest first. `items` is null until the first snapshot. */
-function useLiveCollection<T>(uid: string, name: string, field: string, map: (id: string, d: DocumentData) => T, max = 100) {
+/**
+ * Live subscription to users/{uid}/{name}, newest first: the `max` latest, or with
+ * `sinceMonths`, everything from that many months back (spending comparisons need it).
+ */
+function useLiveCollection<T>(uid: string, name: string, field: string, map: (id: string, d: DocumentData) => T, max = 100, sinceMonths?: number) {
   const [items, setItems] = useState<T[] | null>(null);
   useEffect(() => {
-    const q = query(collection(db, "users", uid, name), orderBy(field, "desc"), limit(max));
+    const now = new Date();
+    const since = sinceMonths ? new Date(now.getFullYear(), now.getMonth() - sinceMonths, 1) : null;
+    const ref = collection(db, "users", uid, name);
+    const q = since ? query(ref, where(field, ">=", Timestamp.fromDate(since)), orderBy(field, "desc")) : query(ref, orderBy(field, "desc"), limit(max));
     return onSnapshot(q, (snap) => setItems(snap.docs.map((d) => map(d.id, d.data()))));
-  }, [uid, name, field, map, max]); // `map` is a module-level function, so it never changes.
+  }, [uid, name, field, map, max, sinceMonths]); // `map` is a module-level function, so it never changes.
   return items;
 }
 
@@ -95,7 +102,8 @@ const holdingDoc = ({ trackerSymbol, ...input }: HoldingInput) => ({
 
 export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { uid: string; ownerName: string | null; weekId: string; children: ReactNode }) {
   const entries = useLiveCollection(uid, "entries", "createdAt", mapEntry);
-  const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction);
+  // Current month + 6 before: enough for the 6-month bars and the 3-month average.
+  const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction, 0, 6);
   const activities = useLiveCollection(uid, "activities", "date", mapActivity);
   const reports = useLiveCollection(uid, "dreamReports", "weekId", mapReport, 1);
   const holdings = useLiveCollection(uid, "holdings", "group", mapHolding);

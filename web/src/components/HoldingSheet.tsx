@@ -18,7 +18,18 @@ const fromNumber = (n: number) => String(n).replace(".", ",");
 const decimal = (value: string) => value.replace(/[^\d.,]/g, "");
 
 /** Add or edit a savings account or an investment line. `holding` null means a new one. */
-export function HoldingSheet({ holding, open, onOpenChange }: { holding: Holding | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+export function HoldingSheet({
+  holding,
+  defaultGroup = "",
+  open,
+  onOpenChange,
+}: {
+  holding: Holding | null;
+  /** Pre-filled account when adding from an account's page. */
+  defaultGroup?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const { holdings, saveHolding, deleteHolding } = useData();
   const [mode, setMode] = useState<Mode>("amount");
   const [group, setGroup] = useState("");
@@ -33,12 +44,12 @@ export function HoldingSheet({ holding, open, onOpenChange }: { holding: Holding
     if (!open) return;
     const asAmount = !holding || (holding.units === 1 && !holding.tracker);
     setMode(asAmount ? "amount" : "units");
-    setGroup(holding?.group ?? "");
+    setGroup(holding?.group ?? defaultGroup);
     setName(holding?.name ?? "");
     setUnits(holding && !asAmount ? fromNumber(holding.units) : "");
     setPrice(holding ? fromNumber(holding.unitPrice) : "");
     setTracker(holding?.tracker?.symbol ?? null);
-  }, [open, holding]);
+  }, [open, holding, defaultGroup]);
 
   const u = mode === "amount" ? 1 : toNumber(units);
   const p = toNumber(price);

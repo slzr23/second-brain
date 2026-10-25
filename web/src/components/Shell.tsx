@@ -1,49 +1,30 @@
-import { Notebook, PersonSimpleRun, Plus, Wallet, type Icon } from "@phosphor-icons/react";
+import { CaretLeft, Notebook, PersonSimpleRun, Plus, Wallet, type Icon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode, type RefObject } from "react";
 import { useData } from "../data/context";
 import { formatToday } from "../lib/format";
-import { Finance } from "../tabs/Finance";
+import { RouteContext, useHashRoute, type TabId } from "../lib/route";
+import { Finance, financeTitle } from "../tabs/Finance";
 import { Sport } from "../tabs/Sport";
 import { Thoughts } from "../tabs/Thoughts";
 import { CaptureSheet } from "./CaptureSheet";
+import { ImportSheet } from "./ImportSheet";
 import { SkeletonPage } from "./Skeleton";
 
 interface Tab {
-  id: "sport" | "pensees" | "finance";
+  id: TabId;
   label: string;
   icon: Icon;
-  View: ComponentType;
+  View: ComponentType<{ path: string[] }>;
+  /** Title of a sub-page ("Dépenses"), null for the tab's main page. */
+  title?: (path: string[]) => string | null;
 }
 
 const TABS: Tab[] = [
   { id: "sport", label: "Sport", icon: PersonSimpleRun, View: Sport },
   { id: "pensees", label: "Pensées", icon: Notebook, View: Thoughts },
-  { id: "finance", label: "Finance", icon: Wallet, View: Finance },
+  { id: "finance", label: "Finance", icon: Wallet, View: Finance, title: financeTitle },
 ];
-type TabId = Tab["id"];
-
-/** The tab lives in the URL hash, so a home-screen shortcut can open /#finance directly. */
-function useHashTab(): [TabId, (id: TabId) => void] {
-  const read = () => TABS.find((t) => `#${t.id}` === window.location.hash)?.id ?? "sport";
-  const [tab, setTab] = useState<TabId>(read);
-  useEffect(() => {
-    const onHash = () => setTab(read());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
-  return [
-    tab,
-    (id) => {
-      if (id === tab) {
-        window.scrollTo({ top: 0, behavior: "smooth" }); // tapping the current tab scrolls up, as on iOS
-        return;
-      }
-      window.location.hash = id;
-      window.scrollTo({ top: 0 });
-    },
-  ];
-}
 
 /** True once the large title has scrolled under the navigation bar. */
 function useCollapsed(target: RefObject<HTMLElement | null>, page: string) {
@@ -61,67 +42,84 @@ function useCollapsed(target: RefObject<HTMLElement | null>, page: string) {
 
 export function Shell({ demo, accountAction }: { demo: boolean; accountAction?: ReactNode }) {
   const { loading } = useData();
-  const [tab, setTab] = useHashTab();
+  const [route, navigate] = useHashRoute();
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const collapsed = useCollapsed(titleRef, tab);
-  const current = TABS.find((t) => t.id === tab)!;
+  const pageKey = [route.tab, ...route.path].join("/");
+  const collapsed = useCollapsed(titleRef, pageKey);
+  const current = TABS.find((t) => t.id === route.tab)!;
+  const subTitle = route.path.length ? (current.title?.(route.path) ?? null) : null;
+  const title = subTitle ?? current.label;
 
   return (
-    <div data-section={tab}>
-      <header className="navbar" data-collapsed={collapsed}>
-        <span className="navbar-title">{current.label}</span>
-      </header>
+    <RouteContext.Provider value={{ route, navigate }}>
+      <div data-section={route.tab}>
+        <header className="navbar" data-collapsed={collapsed}>
+          {subTitle && (
+            <button className="nav-back" onClick={() => navigate({ tab: route.tab, path: route.path.slice(0, -2) })}>
+              <CaretLeft size={22} weight="bold" aria-hidden />
+              {current.label}
+            </button>
+          )}
+          <span className="navbar-title">{title}</span>
+        </header>
 
-      <main className="page">
-        <div className="large-title">
-          <p className="date">{formatToday()}</p>
-          <h1 ref={titleRef}>
-            {current.label}
-            {demo && <span className="badge">Démo</span>}
-          </h1>
-        </div>
+        <main className="page">
+          <div className="large-title">
+            {!subTitle && <p className="date">{formatToday()}</p>}
+            <h1 ref={titleRef}>
+              {title}
+              {demo && !subTitle && <span className="badge">Démo</span>}
+            </h1>
+          </div>
 
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={loading ? "loading" : tab}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-          >
-            {loading ? <SkeletonPage /> : <current.View />}
-          </motion.div>
-        </AnimatePresence>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={loading ? "loading" : pageKey}
+              initial={{ opacity: 0, x: subTitle ? 16 : 0, y: subTitle ? 0 : 6 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {loading ? <SkeletonPage /> : <current.View path={route.path} />}
+            </motion.div>
+          </AnimatePresence>
 
-        {accountAction}
-      </main>
+          {!subTitle && accountAction}
+        </main>
 
-      <nav className="dock" aria-label="Sections">
-        <div className="tabbar glass">
-          {TABS.map((t) => {
-            const active = t.id === tab;
-            return (
-              <button key={t.id} className="tab" aria-current={active ? "page" : undefined} onClick={() => setTab(t.id)}>
-                {active && (
-                  <motion.span
-                    layoutId="tab-highlight"
-                    className="tab-highlight"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.45 }}
-                  />
-                )}
-                <t.icon size={26} weight={active ? "fill" : "regular"} aria-hidden />
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-        <button className="capture-button glass" aria-label="Ajouter un rêve, une note ou une dépense" onClick={() => setCaptureOpen(true)}>
-          <Plus size={26} weight="bold" aria-hidden />
-        </button>
-      </nav>
+        <nav className="dock" aria-label="Sections">
+          <div className="tabbar glass">
+            {TABS.map((t) => {
+              const active = t.id === route.tab;
+              return (
+                <button key={t.id} className="tab" aria-current={active ? "page" : undefined} onClick={() => navigate({ tab: t.id, path: [] })}>
+                  {active && (
+                    <motion.span layoutId="tab-highlight" className="tab-highlight" transition={{ type: "spring", bounce: 0.2, duration: 0.45 }} />
+                  )}
+                  <t.icon size={26} weight={active ? "fill" : "regular"} aria-hidden />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <button className="capture-button glass" aria-label="Ajouter : rêve, note, dépense, entrée d'argent ou import" onClick={() => setCaptureOpen(true)}>
+            <Plus size={26} weight="bold" aria-hidden />
+          </button>
+        </nav>
 
-      <CaptureSheet open={captureOpen} onOpenChange={setCaptureOpen} initialKind={tab === "finance" ? "expense" : "dream"} />
-    </div>
+        <CaptureSheet
+          open={captureOpen}
+          onOpenChange={setCaptureOpen}
+          onImport={() => {
+            setCaptureOpen(false);
+            // Let the first sheet slide away before the next one comes up.
+            setTimeout(() => setImportOpen(true), 350);
+          }}
+        />
+        <ImportSheet open={importOpen} onOpenChange={setImportOpen} />
+      </div>
+    </RouteContext.Provider>
   );
 }
