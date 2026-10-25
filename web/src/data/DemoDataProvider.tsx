@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DataContext } from "./context";
 import { demoActivities, demoDreamReport, demoEntries, demoHoldings, demoTransactions, demoWeek } from "./demo";
 import { mergeHistory } from "../import/history";
-import { accountHoldingId, type DataSource, type Entry, type Holding, type Transaction } from "./types";
+import { accountHoldingId, trackerFor, type DataSource, type Entry, type Holding, type Transaction } from "./types";
 
 /** In-memory data, so the demo is interactive without touching Firebase. */
 export function DemoDataProvider({ children }: { children: ReactNode }) {
@@ -42,8 +42,9 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
           ...input,
           priceDate: new Date(),
           priceSource: "manual",
-          tracker: trackerSymbol ? { symbol: trackerSymbol, baseUnitPrice: input.unitPrice, baseQuote: null } : null,
+          tracker: trackerFor(trackerSymbol, input.unitPrice),
           history: holdings.find((h) => h.id === id)?.history ?? [],
+          investedCents: holdings.find((h) => h.id === id)?.investedCents ?? null,
         };
         setHoldings((list) => (id ? list.map((h) => (h.id === id ? next : h)) : [...list, next]));
       },
@@ -73,9 +74,14 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
             priceSource: "manual",
             tracker: null,
             history: mergeHistory(previous?.history ?? [], history),
+            investedCents: null,
           };
           return previous ? list.map((h) => (h.id === id ? next : h)) : [...list, next];
         });
+      },
+      async saveComputedHolding(id, { trackerSymbol, ...h }) {
+        const next: Holding = { id, ...h, priceDate: new Date(), priceSource: "manual", tracker: trackerFor(trackerSymbol, h.unitPrice) };
+        setHoldings((list) => (list.some((x) => x.id === id) ? list.map((x) => (x.id === id ? next : x)) : [...list, next]));
       },
     }),
     [loading, entries, transactions, holdings],

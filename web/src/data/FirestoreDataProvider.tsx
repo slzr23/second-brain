@@ -20,7 +20,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { db } from "../lib/firebase";
 import { DataContext } from "./context";
 import { mergeHistory } from "../import/history";
-import { accountHoldingId, type Activity, type DataSource, type DreamReport, type Entry, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
+import { accountHoldingId, trackerFor, type Activity, type DataSource, type DreamReport, type Entry, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
 
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
@@ -82,6 +82,7 @@ const mapHolding = (id: string, d: DocumentData): Holding => ({
   priceSource: d.priceSource ?? "manual",
   tracker: d.tracker ?? null,
   history: d.history ?? [],
+  investedCents: d.investedCents ?? null,
 });
 
 /** A typed price becomes the new base: the evening refresh anchors it on that day's quote. */
@@ -89,7 +90,7 @@ const holdingDoc = ({ trackerSymbol, ...input }: HoldingInput) => ({
   ...input,
   priceDate: serverTimestamp(),
   priceSource: "manual",
-  tracker: trackerSymbol ? { symbol: trackerSymbol, baseUnitPrice: input.unitPrice, baseQuote: null } : null,
+  tracker: trackerFor(trackerSymbol, input.unitPrice),
 });
 
 export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { uid: string; ownerName: string | null; weekId: string; children: ReactNode }) {
@@ -189,6 +190,15 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
           priceSource: "manual",
           tracker: null,
           history: mergeHistory(previous, history),
+          investedCents: null,
+        });
+      },
+      async saveComputedHolding(id, { trackerSymbol, ...h }) {
+        await setDoc(doc(db, "users", uid, "holdings", id), {
+          ...h,
+          priceDate: serverTimestamp(),
+          priceSource: "manual",
+          tracker: trackerFor(trackerSymbol, h.unitPrice),
         });
       },
     }),

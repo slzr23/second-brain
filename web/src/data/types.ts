@@ -60,6 +60,15 @@ export const TRACKERS = [
   { symbol: "ETH-EUR", label: "Ether" },
 ] as const;
 
+/**
+ * Crypto quoted in euros: the unit price is the quote itself. Other trackers (a fund
+ * following a share) keep their own price and only move with the quote's variation.
+ */
+export const isDirectTracker = (symbol: string) => /-EUR$/.test(symbol);
+
+export const trackerFor = (symbol: string | null, unitPrice: number) =>
+  symbol ? { symbol, baseUnitPrice: unitPrice, baseQuote: isDirectTracker(symbol) ? unitPrice : null } : null;
+
 /** A savings account or an investment line: Livret A, a PEE fund, some bitcoin… */
 export interface Holding {
   id: string;
@@ -73,7 +82,20 @@ export interface Holding {
   priceDate: Date | null;
   priceSource: "manual" | "auto";
   tracker: { symbol: string; baseUnitPrice: number; baseQuote: number | null } | null;
-  /** Bank accounts only: end-of-month balances rebuilt from the imported movements. */
+  /** Imported accounts and crypto: end-of-month values rebuilt from the history. */
+  history: BalancePoint[];
+  /** Euros put in minus taken out, when known: shows the gain. */
+  investedCents: number | null;
+}
+
+/** A holding computed by an import (a crypto platform, a bank account). */
+export interface ComputedHolding {
+  group: string;
+  name: string;
+  units: number;
+  unitPrice: number;
+  trackerSymbol: string | null;
+  investedCents: number | null;
   history: BalancePoint[];
 }
 
@@ -140,5 +162,7 @@ export interface DataSource {
   importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void): Promise<void>;
   /** Stores a bank account's balance and its history in Patrimoine. */
   saveAccountBalance(account: string, balanceCents: number, history: BalancePoint[]): Promise<void>;
+  /** Creates or replaces a holding computed by an import, under a stable id. */
+  saveComputedHolding(id: string, holding: ComputedHolding): Promise<void>;
   deleteHolding(id: string): Promise<void>;
 }

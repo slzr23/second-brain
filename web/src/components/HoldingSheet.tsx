@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { useData } from "../data/context";
-import { holdingValueCents, TRACKERS, type Holding } from "../data/types";
+import { holdingValueCents, isDirectTracker, TRACKERS, type Holding } from "../data/types";
 import { formatEuros } from "../lib/format";
 import { Segmented } from "./Segmented";
 
@@ -137,7 +137,13 @@ export function HoldingSheet({ holding, open, onOpenChange }: { holding: Holding
                     </button>
                   ))}
                 </div>
-                {tracker && <p className="hint">La valeur suivra chaque soir l'évolution du cours, à partir de celle que tu saisis.</p>}
+                {tracker && (
+                  <p className="hint">
+                    {isDirectTracker(tracker)
+                      ? "La valeur d'une part sera chaque soir le cours du jour."
+                      : "La valeur suivra chaque soir l'évolution du cours, à partir de celle que tu saisis."}
+                  </p>
+                )}
               </>
             )}
 

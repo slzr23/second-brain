@@ -3,18 +3,35 @@ import { ArrowsClockwise, Plus } from "@phosphor-icons/react";
 import { useState } from "react";
 import { HoldingSheet } from "../components/HoldingSheet";
 import { useData } from "../data/context";
-import { holdingValueCents, TRACKERS, type Holding } from "../data/types";
+import { holdingValueCents, isDirectTracker, TRACKERS, type Holding } from "../data/types";
 import { formatEuros, formatShortDay } from "../lib/format";
 
 const units = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 6 });
+const coins = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 8 });
 const trackerLabel = (symbol: string) => TRACKERS.find((t) => t.symbol === symbol)?.label ?? symbol;
 
 function detail(h: Holding): string {
   const date = h.priceDate ? formatShortDay(h.priceDate) : null;
   if (h.units === 1 && !h.tracker) return date ? `Solde au ${date}` : "Solde";
+  // Crypto: the amount of coins says it all ("0,00714903 BTC").
+  if (h.tracker && isDirectTracker(h.tracker.symbol)) return `${coins.format(h.units)} ${h.tracker.symbol.replace(/-EUR$/, "")}`;
   const parts = `${units.format(h.units)} ${h.units > 1 ? "parts" : "part"}`;
   if (h.tracker) return `${parts}, suit ${trackerLabel(h.tracker.symbol)}`;
   return date ? `${parts} au ${date}` : parts;
+}
+
+/** Gain since the money was put in, when the import knows how much that was. */
+function Gain({ holding }: { holding: Holding }) {
+  if (!holding.investedCents) return null;
+  const gain = holdingValueCents(holding) - holding.investedCents;
+  const pct = Math.round((gain / holding.investedCents) * 100);
+  return (
+    <span className={`gain ${gain >= 0 ? "up" : "down"}`}>
+      {gain >= 0 ? "+" : ""}
+      {formatEuros(gain)} ({gain >= 0 ? "+" : ""}
+      {pct} %)
+    </span>
+  );
 }
 
 /** Savings and investments, grouped by account, biggest first. */
@@ -92,7 +109,10 @@ export function Wealth() {
                           {detail(h)}
                         </span>
                       </span>
-                      <span className="list-row-value num">{formatEuros(holdingValueCents(h))}</span>
+                      <span className="value-stack">
+                        <span className="list-row-value num">{formatEuros(holdingValueCents(h))}</span>
+                        <Gain holding={h} />
+                      </span>
                     </button>
                   </li>
                 ))}
