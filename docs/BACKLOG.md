@@ -10,8 +10,8 @@ Dernière mise à jour : 30 octobre 2026
 - [x] Réimporter les 5 fichiers crypto (4 Bitstack et Revolut) et vérifier que la ligne Bitstack couvre bien jusqu'à septembre 2026
 - [x] Renseigner le solde réel du compte courant et du Livret A avec les lignes « Ajouter » de Patrimoine
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
-- [ ] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
-- [ ] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
+- [x] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
+- [x] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
