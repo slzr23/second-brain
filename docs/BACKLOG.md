@@ -6,12 +6,12 @@ Dernière mise à jour : 30 octobre 2026
 
 ## 🙋 À faire de mon côté
 
-- [ ] Déployer la dernière version : `git pull`, `npm --prefix web install`, `firebase deploy --only hosting`
+- [x] Déployer la dernière version : `git pull`, `npm --prefix web install`, `firebase deploy --only hosting`
 - [x] Réimporter les 5 fichiers crypto (4 Bitstack et Revolut) et vérifier que la ligne Bitstack couvre bien jusqu'à septembre 2026
 - [x] Renseigner le solde réel du compte courant et du Livret A avec les lignes « Ajouter » de Patrimoine
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
-- [ ] Envoyer l'archive Strava dès qu'elle arrive (l'en-tête de `activities.csv` et 2 ou 3 lignes suffisent pour écrire l'import)
-- [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions »
+- [ ] Envoyer l'archive Strava dès qu'elle arrive (l'en-tête de `activities.csv` et 2 ou 3 lignes suffisent pour écrire l'import). Demandée le 25 octobre, toujours rien reçue au 30 : vérifier les spams, sinon la redemander
+- [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
 
