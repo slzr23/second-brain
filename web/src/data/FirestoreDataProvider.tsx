@@ -66,11 +66,15 @@ const mapTransaction = (id: string, d: DocumentData): Transaction => ({
 const mapActivity = (id: string, d: DocumentData): Activity => ({
   id,
   name: d.name ?? "Course",
+  sport: d.sport ?? "Run",
   date: toDate(d.date),
-  distanceM: d.distanceM,
-  durationS: d.durationS,
+  distanceM: d.distanceM ?? 0,
+  durationS: d.durationS ?? 0,
+  elevationM: d.elevationM ?? null,
   avgHr: d.avgHr ?? null,
-  paceSecKm: d.paceSecKm,
+  maxHr: d.maxHr ?? null,
+  paceSecKm: d.paceSecKm ?? 0,
+  relativeEffort: d.relativeEffort ?? null,
   report: d.report ?? null,
 });
 
@@ -108,7 +112,8 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
   // The whole history (a few thousand small documents): yearly bars and daily balances need it.
   const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction, 0, 120);
   const netWorthDays = useLiveCollection(uid, "netWorth", "day", mapSnapshot, 400);
-  const activities = useLiveCollection(uid, "activities", "date", mapActivity);
+  // The whole history (a few hundred documents): weekly averages and records need it.
+  const activities = useLiveCollection(uid, "activities", "date", mapActivity, 1000);
   const reports = useLiveCollection(uid, "dreamReports", "weekId", mapReport, 1);
   const holdings = useLiveCollection(uid, "holdings", "group", mapHolding);
   const [week, setWeek] = useState<WeekStats | null>(null);
@@ -200,6 +205,17 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
               source: "bank",
               createdAt: serverTimestamp(),
             });
+          }
+          await batch.commit();
+          onProgress?.(Math.min(i + 400, items.length));
+        }
+      },
+      async importActivities(items, onProgress) {
+        for (let i = 0; i < items.length; i += 400) {
+          const batch = writeBatch(db);
+          for (const { id, date, ...item } of items.slice(i, i + 400)) {
+            // merge: a report Claude already wrote for this activity stays.
+            batch.set(doc(db, "users", uid, "activities", id), { ...item, date: Timestamp.fromDate(date), importedAt: serverTimestamp() }, { merge: true });
           }
           await batch.commit();
           onProgress?.(Math.min(i + 400, items.length));

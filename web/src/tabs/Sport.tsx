@@ -1,14 +1,53 @@
 import NumberFlow from "@number-flow/react";
-import { ChatCircleText, PersonSimpleRun } from "@phosphor-icons/react";
+import {
+  Barbell,
+  Basketball,
+  Bicycle,
+  ChatCircleText,
+  PersonSimpleHike,
+  PersonSimpleRun,
+  PersonSimpleSki,
+  PersonSimpleWalk,
+  SoccerBall,
+  SwimmingPool,
+  TennisBall,
+  Volleyball,
+  type Icon,
+} from "@phosphor-icons/react";
+import { useState } from "react";
 import { WeekBars } from "../charts/WeekBars";
 import { Ring } from "../components/Ring";
 import { useData } from "../data/context";
+import { isRun, type Activity } from "../data/types";
 import { formatClock, formatDuration, formatKm, formatPace, formatWhen } from "../lib/format";
+import { sportLabel, weekFromActivities } from "../lib/sport";
+
+const SPORT_ICONS: Record<string, Icon> = {
+  Run: PersonSimpleRun,
+  TrailRun: PersonSimpleRun,
+  VirtualRun: PersonSimpleRun,
+  Ride: Bicycle,
+  VirtualRide: Bicycle,
+  Swim: SwimmingPool,
+  Hike: PersonSimpleHike,
+  Walk: PersonSimpleWalk,
+  Soccer: SoccerBall,
+  Padel: TennisBall,
+  Tennis: TennisBall,
+  Basketball: Basketball,
+  Volleyball: Volleyball,
+  AlpineSki: PersonSimpleSki,
+  Workout: Barbell,
+  WeightTraining: Barbell,
+};
+const PAGE = 15;
 
 const ZONES = ["Récupération", "Endurance", "Tempo", "Seuil", "VO2 max"];
 
 function Week() {
-  const { week } = useData();
+  const { week: stored, activities } = useData();
+  const computed = weekFromActivities(activities);
+  const week = stored ?? computed;
   if (!week) {
     return (
       <div className="card">
@@ -28,10 +67,15 @@ function Week() {
             <span className="unit">km</span>
           </p>
           <p className="secondary" style={{ fontSize: 15 }}>
-            Objectif {week.goalKm} km
+            {stored ? `Objectif ${week.goalKm} km` : `${week.goalKm} km en moyenne sur 4 semaines`}
           </p>
         </div>
-        <Ring progress={week.volumeKm / week.goalKm} label={`${Math.round((week.volumeKm / week.goalKm) * 100)} % de l'objectif`} />
+        {week.goalKm > 0 && (
+          <Ring
+            progress={week.volumeKm / week.goalKm}
+            label={`${Math.round((week.volumeKm / week.goalKm) * 100)} % ${stored ? "de l'objectif" : "de ta moyenne"}`}
+          />
+        )}
       </div>
 
       <WeekBars km={week.byDayKm} />
@@ -45,13 +89,23 @@ function Week() {
           <p className="stat-label">Durée</p>
           <p className="stat-value">{formatDuration(week.durationS)}</p>
         </div>
-        <div>
-          <p className="stat-label">FC au repos</p>
-          <p className="stat-value">
-            {week.avgRestHr ?? "–"}
-            <small>bpm</small>
-          </p>
-        </div>
+        {week.avgRestHr !== null || !computed ? (
+          <div>
+            <p className="stat-label">FC au repos</p>
+            <p className="stat-value">
+              {week.avgRestHr ?? "–"}
+              <small>bpm</small>
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p className="stat-label">FC moy.</p>
+            <p className="stat-value">
+              {computed.avgHr ?? "–"}
+              <small>bpm</small>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -59,7 +113,7 @@ function Week() {
 
 function Zones() {
   const { week } = useData();
-  if (!week) return null;
+  if (!week || week.timeInZones.length === 0) return null;
   const total = week.timeInZones.reduce((a, b) => a + b, 0) || 1;
 
   return (
@@ -91,65 +145,79 @@ function Zones() {
   );
 }
 
+function ActivityCard({ a }: { a: Activity }) {
+  const SportIcon = SPORT_ICONS[a.sport] ?? Barbell;
+  const run = isRun(a);
+  const stats: { label: string; value: string; unit?: string }[] = [];
+  if (a.distanceM > 0) stats.push({ label: "Distance", value: formatKm(a.distanceM), unit: "km" });
+  if (run && a.paceSecKm > 0) stats.push({ label: "Allure", value: formatPace(a.paceSecKm), unit: "/km" });
+  stats.push({ label: "Temps", value: formatClock(a.durationS) });
+  if (a.avgHr) stats.push({ label: "FC moy.", value: String(a.avgHr) });
+  else if (!run && a.elevationM) stats.push({ label: "Dénivelé", value: String(a.elevationM), unit: "m" });
+
+  return (
+    <article className="card">
+      <div className="run-head">
+        <span className="avatar tone-sport" aria-hidden>
+          <SportIcon size={22} weight="fill" />
+        </span>
+        <div>
+          <h3>{a.name}</h3>
+          <p>
+            {formatWhen(a.date)}
+            {!run && ` · ${sportLabel(a.sport)}`}
+          </p>
+        </div>
+      </div>
+      <div className="run-stats" style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
+        {stats.map((s) => (
+          <div key={s.label}>
+            <p className="stat-label">{s.label}</p>
+            <p className="stat-value">
+              {s.value}
+              {s.unit && <small>{s.unit}</small>}
+            </p>
+          </div>
+        ))}
+      </div>
+      {a.report && (
+        <div className="coach">
+          <p className="coach-head">
+            <ChatCircleText size={16} weight="fill" aria-hidden />
+            Compte rendu
+          </p>
+          <p>{a.report.summary}</p>
+        </div>
+      )}
+    </article>
+  );
+}
+
 function Activities() {
   const { activities } = useData();
+  const [shown, setShown] = useState(PAGE);
 
   return (
     <section className="section">
       <div className="section-header">
         <h2>Activités</h2>
+        {activities.length > 0 && <span className="secondary">{activities.length}</span>}
       </div>
       {activities.length === 0 ? (
         <div className="card">
-          <p className="empty">Aucune sortie pour l'instant. Une fois Strava connecté, chaque course arrivera ici avec son compte rendu.</p>
+          <p className="empty">Aucune sortie pour l'instant. Importe ton historique Strava avec le bouton +, puis chaque course arrivera ici avec son compte rendu.</p>
         </div>
       ) : (
-        activities.map((a) => (
-          <article key={a.id} className="card">
-            <div className="run-head">
-              <span className="avatar tone-sport" aria-hidden>
-                <PersonSimpleRun size={22} weight="fill" />
-              </span>
-              <div>
-                <h3>{a.name}</h3>
-                <p>{formatWhen(a.date)}</p>
-              </div>
-            </div>
-            <div className="run-stats" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-              <div>
-                <p className="stat-label">Distance</p>
-                <p className="stat-value">
-                  {formatKm(a.distanceM)}
-                  <small>km</small>
-                </p>
-              </div>
-              <div>
-                <p className="stat-label">Allure</p>
-                <p className="stat-value">
-                  {formatPace(a.paceSecKm)}
-                  <small>/km</small>
-                </p>
-              </div>
-              <div>
-                <p className="stat-label">Temps</p>
-                <p className="stat-value">{formatClock(a.durationS)}</p>
-              </div>
-              <div>
-                <p className="stat-label">FC moy.</p>
-                <p className="stat-value">{a.avgHr ?? "–"}</p>
-              </div>
-            </div>
-            {a.report && (
-              <div className="coach">
-                <p className="coach-head">
-                  <ChatCircleText size={16} weight="fill" aria-hidden />
-                  Compte rendu
-                </p>
-                <p>{a.report.summary}</p>
-              </div>
-            )}
-          </article>
-        ))
+        <>
+          {activities.slice(0, shown).map((a) => (
+            <ActivityCard key={a.id} a={a} />
+          ))}
+          {shown < activities.length && (
+            <button className="card more-button" onClick={() => setShown((n) => n + PAGE)}>
+              Afficher {Math.min(PAGE, activities.length - shown)} de plus
+            </button>
+          )}
+        </>
       )}
     </section>
   );

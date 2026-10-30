@@ -6,6 +6,9 @@ import { useData } from "../data/context";
 import { parseImportFile, summarize, type ImportedTransaction, type ImportSummary } from "../import";
 import { cryptoPositions, type CryptoPosition, type CryptoTrade } from "../import/crypto";
 import { monthlyBalances } from "../import/history";
+import { summarizeActivities, type ActivitySummary } from "../import/strava";
+import type { ImportedActivity } from "../data/types";
+import { sportLabel } from "../lib/sport";
 import { formatEuros } from "../lib/format";
 
 const ACCOUNTS = ["Compte courant", "Livret A", "Livret Jeune"];
@@ -46,6 +49,7 @@ type State =
       positions: CryptoPosition[];
       coverage: { platform: string; from: Date; to: Date; count: number }[];
     }
+  | { step: "activities"; items: ImportedActivity[]; summary: ActivitySummary }
   | { step: "writing"; done: number; total: number }
   | { step: "error"; message: string };
 
@@ -54,7 +58,7 @@ type State =
  * (they become holdings). Several files can be picked at once: Bitstack gives one per year.
  */
 export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { ownerName, existingTransactionIds, importTransactions, saveAccountBalance, saveComputedHolding } = useData();
+  const { ownerName, existingTransactionIds, importTransactions, importActivities, activities, saveAccountBalance, saveComputedHolding } = useData();
   const [balance, setBalance] = useState("");
   const [account, setAccount] = useState(ACCOUNTS[0]);
   const [files, setFiles] = useState<File[]>([]);
@@ -69,9 +73,9 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   };
   // Read through a ref: the data source changes on every snapshot (including the
   // ones caused by the import itself), which must not restart the preview.
-  const data = useRef({ ownerName, existingTransactionIds });
+  const data = useRef({ ownerName, existingTransactionIds, activityIds: activities.map((a) => a.id) });
   const guessed = useRef(false);
-  data.current = { ownerName, existingTransactionIds };
+  data.current = { ownerName, existingTransactionIds, activityIds: activities.map((a) => a.id) };
 
   useEffect(() => {
     if (!open) {
@@ -96,10 +100,13 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
         };
         const parsed = await Promise.all(files.map(async (f) => parseImportFile(await f.arrayBuffer(), ctx)));
         const kinds = new Set(parsed.map((p) => p.kind));
-        if (kinds.size > 1) throw new Error("Importe les relevés bancaires et les exports crypto séparément.");
+        if (kinds.size > 1) throw new Error("Importe les relevés bancaires, les exports crypto et l'historique Strava séparément.");
         const format = parsed[0].format;
 
-        if (parsed[0].kind === "bank") {
+        if (parsed[0].kind === "activities") {
+          const items = [...new Map(parsed.flatMap((p) => (p.kind === "activities" ? p.activities : [])).map((a) => [a.id, a])).values()];
+          if (!cancelled) setState({ step: "activities", items, summary: summarizeActivities(items, new Set(data.current.activityIds)) });
+        } else if (parsed[0].kind === "bank") {
           // First file of this account: guess it from the content (a savings account only
           // moves money to and from your own accounts, plus yearly interest).
           const first = parsed[0].items;
@@ -168,6 +175,20 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
     }
   }
 
+  async function runActivities() {
+    if (state.step !== "activities") return;
+    const { items } = state;
+    setState({ step: "writing", done: 0, total: items.length });
+    try {
+      await importActivities(items, (done) => setState({ step: "writing", done, total: items.length }));
+      toast.success(`${count.format(items.length)} activités Strava importées`);
+      onOpenChange(false);
+    } catch (error) {
+      console.error(error);
+      setState({ step: "error", message: `L'import s'est interrompu (${(error as Error).message}). Relance-le : rien ne sera dupliqué.` });
+    }
+  }
+
   async function runCrypto() {
     if (state.step !== "crypto") return;
     const { positions } = state;
@@ -211,7 +232,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   }
 
   const s = state.step === "bank" ? state.summary : null;
-  const fileLabel = files.length === 0 ? "Choisir ou déposer des CSV" : "Ajouter un autre fichier";
+  const fileLabel = files.length === 0 ? "Choisir ou déposer des fichiers" : "Ajouter un autre fichier";
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
@@ -247,7 +268,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
               <input
                 type="file"
                 multiple
-                accept=".csv"
+                accept=".csv,.json"
                 className="sr-only"
                 onChange={(e) => {
                   addFiles(e.target.files);
@@ -270,7 +291,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
             )}
             {state.step === "pick" && (
               <p className="hint">
-                Relevé Caisse d'Épargne, historique Bitstack ou relevé crypto Revolut. Tu peux en ajouter plusieurs, un par un ou d'un coup.
+                Relevé Caisse d'Épargne, historique Bitstack ou relevé crypto Revolut, ou historique Strava (.json). Tu peux en ajouter plusieurs, un par un ou d'un coup.
               </p>
             )}
             {state.step === "reading" && <p className="hint">Lecture…</p>}
@@ -407,9 +428,46 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
               </>
             )}
 
+            {state.step === "activities" && (
+              <div className="form-group">
+                <div className="field-row">
+                  <span>Période</span>
+                  <span className="value">{state.summary.from && state.summary.to ? `${day.format(state.summary.from)} au ${day.format(state.summary.to)}` : "–"}</span>
+                </div>
+                <div className="field-row">
+                  <span>Courses</span>
+                  <span className="value num">
+                    {count.format(state.summary.runs)} · {count.format(state.summary.runKm)} km
+                  </span>
+                </div>
+                {state.summary.others.length > 0 && (
+                  <div className="field-row">
+                    <span>Autres sports</span>
+                    <span className="value">{state.summary.others.map(([sport, n]) => `${sportLabel(sport)} ${n}`).join(", ")}</span>
+                  </div>
+                )}
+                <div className="field-row">
+                  <span>Avec fréquence cardiaque</span>
+                  <span className="value num">{count.format(state.summary.withHr)}</span>
+                </div>
+                {state.summary.fresh < state.summary.total && (
+                  <div className="field-row">
+                    <span>Déjà importées</span>
+                    <span className="value num">{count.format(state.summary.total - state.summary.fresh)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {state.step === "writing" ? (
               <button className="primary" disabled>
                 Import… {count.format(state.done)} / {count.format(state.total)}
+              </button>
+            ) : state.step === "activities" ? (
+              <button className="primary" onClick={runActivities}>
+                {state.summary.fresh === state.summary.total
+                  ? `Importer ${count.format(state.summary.total)} activités`
+                  : `Importer ${count.format(state.summary.fresh)} nouvelles, mettre à jour ${count.format(state.summary.total - state.summary.fresh)}`}
               </button>
             ) : state.step === "crypto" ? (
               <button className="primary" onClick={runCrypto}>

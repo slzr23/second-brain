@@ -10,7 +10,8 @@ Dernière mise à jour : 30 octobre 2026
 - [x] Réimporter les 5 fichiers crypto (4 Bitstack et Revolut) et vérifier que la ligne Bitstack couvre bien jusqu'à septembre 2026
 - [x] Renseigner le solde réel du compte courant et du Livret A avec les lignes « Ajouter » de Patrimoine
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
-- [ ] Envoyer l'archive Strava dès qu'elle arrive (l'en-tête de `activities.csv` et 2 ou 3 lignes suffisent pour écrire l'import). Demandée le 25 octobre, toujours rien reçue au 30 : vérifier les spams, sinon la redemander
+- [ ] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
+- [ ] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
@@ -21,7 +22,7 @@ Dernière mise à jour : 30 octobre 2026
 
 1. **Finance : trier l'historique avec Claude, carte par carte.** Environ 870 dépenses importées ne sont pas classées. Claude propose essentiel, social ou superflu par lots ; je valide en glissant chaque carte (inspiré du *Swipe deck* de bencho.dev) : à droite pour accepter, à gauche pour corriger. Le même geste remplace les trois boutons de « À trier ».
 2. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée : « Rêve enregistré », « −12,50 € Kebab ».
-3. **Sport : importer l'historique Strava** depuis l'archive : sorties, distances, allures, FC, zones.
+3. **Sport : FC de tout l'historique.** L'import contient la FC moyenne et max des sorties depuis août 2026 ; compléter les plus anciennes si les tendances sur plusieurs années deviennent utiles.
 4. **Sport : le tableau de bord** : volume de la semaine, nombre de sorties, allures, zones cardiaques.
 5. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
 6. **Sport : sommeil et FC au repos** via un raccourci Apple Santé chaque matin.
@@ -43,7 +44,7 @@ Dernière mise à jour : 30 octobre 2026
 
 ## 🧱 Bloqué ou à décider
 
-- **Nouvelles sorties après l'import Strava** : l'accord d'API Strava interdit d'envoyer les données à une IA, et le programme développeur Garmin est fermé. Piste : récupérer les entraînements depuis Apple Santé.
+- **Nouvelles sorties après l'import Strava** : l'accord d'API Strava interdit d'envoyer les données à une IA, et le programme développeur Garmin est fermé. Pistes : refaire un fichier d'import via le connecteur Strava de Claude (comme pour l'historique), ou récupérer les entraînements depuis Apple Santé.
 - **PEE Amundi** : pas d'API. Les fonds suivent le cours de l'action Airbus, mais leurs parts doivent être mises à jour à la main de temps en temps.
 - **Historique du PEE** : il n'est connu que depuis sa saisie, donc les graphiques reportent sa valeur actuelle dans le passé. Un export des opérations Amundi (versements, abondements) permettrait de reconstruire la vraie courbe.
 - **Courbe crypto exacte** : les mois passés sont valorisés au prix du dernier achat, avec une ligne droite d'un mois à l'autre. Pour suivre le vrai cours jour par jour, il faudrait récupérer l'historique des cours côté serveur.
@@ -61,6 +62,11 @@ Dernière mise à jour : 30 octobre 2026
 - Point d'entrée `ingest` pour l'Action Button et Apple Pay, avec jeton secret
 - CI GitHub Actions, démo publique sur données fictives
 - Interface façon iOS : gros titres, barre d'onglets en verre, mode sombre
+
+**Sport**
+- Import de l'historique Strava (fichier .json) : toutes les activités, distance, allure, durée, dénivelé, effort relatif, FC moyenne et max des sorties récentes
+- Semaine calculée à partir des sorties : volume, nombre de sorties, durée, FC moyenne, comparaison avec la moyenne des 4 semaines précédentes
+- Liste des activités par sport (course, foot, vélo, natation…)
 
 **Pensées**
 - Capture d'un rêve ou d'une note en 2 secondes avec l'Action Button

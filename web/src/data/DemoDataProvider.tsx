@@ -9,6 +9,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState(demoEntries);
   const [transactions, setTransactions] = useState(demoTransactions);
   const [holdings, setHoldings] = useState(demoHoldings);
+  const [activities, setActivities] = useState(demoActivities);
   // A short fake load, so the demo also shows the loading state.
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -22,7 +23,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       entries,
       dreamReport: demoDreamReport,
       transactions,
-      activities: demoActivities,
+      activities,
       week: demoWeek,
       holdings,
       netWorthDays: [],
@@ -68,6 +69,14 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         setTransactions((list) => [...list, ...added].sort((a, b) => b.date.getTime() - a.date.getTime()));
         onProgress?.(items.length);
       },
+      async importActivities(items, onProgress) {
+        setActivities((list) => {
+          const byId = new Map(list.map((a) => [a.id, a]));
+          for (const { id, ...a } of items) byId.set(id, { id, ...a, report: byId.get(id)?.report ?? null });
+          return [...byId.values()].sort((a, b) => b.date.getTime() - a.date.getTime());
+        });
+        onProgress?.(items.length);
+      },
       async saveAccountBalance(account, balanceCents, history) {
         const id = accountHoldingId(account);
         setHoldings((list) => {
@@ -92,7 +101,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         setHoldings((list) => (list.some((x) => x.id === id) ? list.map((x) => (x.id === id ? next : x)) : [...list, next]));
       },
     }),
-    [loading, entries, transactions, holdings],
+    [loading, entries, transactions, holdings, activities],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

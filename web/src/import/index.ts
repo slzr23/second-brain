@@ -3,6 +3,8 @@ import { revolut } from "./revolut";
 import { caisseEpargne } from "./caisseEpargne";
 import type { CryptoTrade } from "./crypto";
 import { decodeBankFile } from "./csv";
+import { isStravaExport, parseStrava } from "./strava";
+import type { ImportedActivity } from "../data/types";
 import type { BankFormat, ImportedTransaction, ParseContext } from "./types";
 
 export type { ImportedTransaction } from "./types";
@@ -14,17 +16,19 @@ export const CRYPTO_FORMATS = [bitstack, revolut];
 
 export type ParsedFile =
   | { kind: "bank"; format: string; items: ImportedTransaction[] }
-  | { kind: "crypto"; format: string; trades: CryptoTrade[] };
+  | { kind: "crypto"; format: string; trades: CryptoTrade[] }
+  | { kind: "activities"; format: string; activities: ImportedActivity[] };
 
 export async function parseImportFile(buffer: ArrayBuffer, ctx: ParseContext): Promise<ParsedFile> {
   const text = decodeBankFile(buffer);
+  if (isStravaExport(text)) return { kind: "activities", format: "Strava", activities: parseStrava(text) };
   const header = text.split(/\r?\n/, 1)[0];
   const bank = BANK_FORMATS.find((f) => f.detect(header));
   if (bank) return { kind: "bank", format: bank.name, items: await bank.parse(text, ctx) };
   const crypto = CRYPTO_FORMATS.find((f) => f.detect(header));
   if (crypto) return { kind: "crypto", format: crypto.name, trades: await crypto.parse(text) };
   throw new Error(
-    "Ce fichier n'est pas un export reconnu. Caisse d'Épargne : site web > Télécharger les opérations > format Excel (.csv). Bitstack : export de l'historique en CSV. Revolut : Crypto > … > Relevé > Excel.",
+    "Ce fichier n'est pas un export reconnu. Caisse d'Épargne : site web > Télécharger les opérations > format Excel (.csv). Bitstack : export de l'historique en CSV. Revolut : Crypto > … > Relevé > Excel. Strava : le fichier .json préparé par Claude.",
   );
 }
 

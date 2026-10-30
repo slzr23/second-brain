@@ -122,14 +122,34 @@ export const holdingValueCents = (h: Pick<Holding, "units" | "unitPrice">) => Ma
 export interface Activity {
   id: string;
   name: string;
+  /** Strava sport type: "Run", "TrailRun", "Ride", "Swim", "Soccer"… */
+  sport: string;
   date: Date;
   distanceM: number;
+  /** Moving time. */
   durationS: number;
+  elevationM: number | null;
   avgHr: number | null;
-  /** Seconds per km. */
+  maxHr: number | null;
+  /** Seconds per km (0 when there is no distance). */
   paceSecKm: number;
+  /** Strava's heart-rate based effort score. */
+  relativeEffort: number | null;
   report: { summary: string } | null;
 }
+
+export const isRun = (a: Pick<Activity, "sport">) => ["Run", "TrailRun", "VirtualRun"].includes(a.sport);
+
+/** An activity read from an export, before it is stored. */
+export type ImportedActivity = Omit<Activity, "report"> & {
+  source: "strava";
+  elapsedS: number;
+  cadence: number | null;
+  calories: number | null;
+  tags: string[];
+  location: string | null;
+  description: string | null;
+};
 
 export interface WeekStats {
   volumeKm: number;
@@ -163,6 +183,8 @@ export interface DataSource {
   /** Ids of the lines already stored for this account, to import only new ones. */
   existingTransactionIds(account: string): Promise<Set<string>>;
   importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void): Promise<void>;
+  /** Creates or refreshes activities under their Strava id; a report already written is kept. */
+  importActivities(items: ImportedActivity[], onProgress?: (done: number) => void): Promise<void>;
   /** Stores a bank account's balance and its history in Patrimoine. */
   saveAccountBalance(account: string, balanceCents: number, history: BalancePoint[]): Promise<void>;
   /** Every stored movement of a bank account (not only the recent ones), to rebuild its balance history. */

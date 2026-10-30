@@ -61,6 +61,24 @@ service cloud.firestore {
         allow delete: if isOwner(uid);
       }
 
+      // Activity history imported from a Strava export, under the Strava id.
+      // The report written by Claude is never set or changed from the app.
+      function validActivity(d) {
+        return d.source == 'strava'
+          && d.name is string && d.name.size() > 0 && d.name.size() <= 200
+          && d.sport is string && d.sport.size() > 0 && d.sport.size() <= 40
+          && d.date is timestamp
+          && d.distanceM is number && d.distanceM >= 0
+          && d.durationS is number && d.durationS >= 0
+          && (d.avgHr == null || d.avgHr is number);
+      }
+      match /activities/{docId} {
+        allow create: if isOwner(uid) && docId.matches('strava_[0-9]+')
+          && validActivity(request.resource.data) && !('report' in request.resource.data);
+        allow update: if isOwner(uid) && validActivity(request.resource.data)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['report']);
+      }
+
       // Accepting or rejecting a training adjustment proposed by Claude.
       match /proposals/{docId} {
         allow update: if isOwner(uid)

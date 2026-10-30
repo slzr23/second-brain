@@ -18,6 +18,10 @@ export const demoActivities: Activity[] = [
     distanceM: 8_120,
     durationS: 2_870,
     avgHr: 138,
+    sport: "Run",
+    elevationM: null,
+    maxHr: null,
+    relativeEffort: null,
     paceSecKm: 353,
     report: {
       summary:
@@ -31,6 +35,10 @@ export const demoActivities: Activity[] = [
     distanceM: 11_400,
     durationS: 3_310,
     avgHr: 162,
+    sport: "Run",
+    elevationM: null,
+    maxHr: null,
+    relativeEffort: null,
     paceSecKm: 290,
     report: {
       summary:
@@ -44,6 +52,10 @@ export const demoActivities: Activity[] = [
     distanceM: 9_000,
     durationS: 3_060,
     avgHr: 141,
+    sport: "Run",
+    elevationM: null,
+    maxHr: null,
+    relativeEffort: null,
     paceSecKm: 340,
     report: null,
   },
@@ -54,6 +66,10 @@ export const demoActivities: Activity[] = [
     distanceM: 18_300,
     durationS: 6_420,
     avgHr: 146,
+    sport: "Run",
+    elevationM: null,
+    maxHr: null,
+    relativeEffort: null,
     paceSecKm: 351,
     report: null,
   },
