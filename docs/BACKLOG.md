@@ -2,12 +2,12 @@
 
 Où en est le projet. Mis à jour à chaque livraison : ce qui est fait, ce qui attend une action de ma part, ce qui vient ensuite.
 
-Dernière mise à jour : 25 octobre 2026
+Dernière mise à jour : 30 octobre 2026
 
 ## 🙋 À faire de mon côté
 
 - [ ] Déployer la dernière version : `git pull`, `npm --prefix web install`, `firebase deploy --only hosting`
-- [ ] Réimporter les 5 fichiers crypto (4 Bitstack et Revolut) et vérifier que la ligne Bitstack couvre bien jusqu'à septembre 2026
+- [x] Réimporter les 5 fichiers crypto (4 Bitstack et Revolut) et vérifier que la ligne Bitstack couvre bien jusqu'à septembre 2026
 - [ ] Renseigner le solde réel du compte courant et du Livret A avec les lignes « Ajouter » de Patrimoine
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
 - [ ] Envoyer l'archive Strava dès qu'elle arrive (l'en-tête de `activities.csv` et 2 ou 3 lignes suffisent pour écrire l'import)
@@ -19,13 +19,27 @@ Dernière mise à jour : 25 octobre 2026
 
 ## 📋 À venir, dans l'ordre
 
-1. **Finance : trier l'historique avec Claude.** Environ 870 dépenses importées ne sont pas classées. Claude propose essentiel, social ou superflu par lots, je valide d'un geste.
-2. **Sport : importer l'historique Strava** depuis l'archive : sorties, distances, allures, FC, zones.
-3. **Sport : le tableau de bord** : volume de la semaine, nombre de sorties, allures, zones cardiaques.
-4. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
-5. **Sport : sommeil et FC au repos** via un raccourci Apple Santé chaque matin.
-6. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
-7. **Finance : synchronisation bancaire automatique** (Enable Banking) pour ne plus exporter de CSV.
+1. **Finance : trier l'historique avec Claude, carte par carte.** Environ 870 dépenses importées ne sont pas classées. Claude propose essentiel, social ou superflu par lots ; je valide en glissant chaque carte (inspiré du *Swipe deck* de bencho.dev) : à droite pour accepter, à gauche pour corriger. Le même geste remplace les trois boutons de « À trier ».
+2. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée : « Rêve enregistré », « −12,50 € Kebab ».
+3. **Sport : importer l'historique Strava** depuis l'archive : sorties, distances, allures, FC, zones.
+4. **Sport : le tableau de bord** : volume de la semaine, nombre de sorties, allures, zones cardiaques.
+5. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
+6. **Sport : sommeil et FC au repos** via un raccourci Apple Santé chaque matin.
+7. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
+8. **Finance : synchronisation bancaire automatique** (Enable Banking) pour ne plus exporter de CSV.
+
+### Plus tard
+
+- **UI : tirer pour actualiser** sur Finance, pour relancer les cours.
+- **UI : bouton + en menu radial** (inspiré de bencho.dev et Smooth UI), à la place de la feuille.
+- **UI : cartes de comptes qui s'agrandissent** depuis Patrimoine, au lieu de changer de page.
+
+### Règles pour les briques d'UI externes (bencho.dev, Smooth UI…)
+
+- Vérifier la licence avant de reprendre du code : le repo est public. Sans licence claire, réécrire l'effet avec Motion en s'inspirant seulement du principe.
+- Porter chaque bloc dans notre CSS (pas de Tailwind ni de nouvelle librairie de styles).
+- Respecter le réglage « Réduire les animations » de l'iPhone.
+- Deux ou trois effets utiles, pas plus : l'app reste sobre, façon iOS.
 
 ## 🧱 Bloqué ou à décider
 
