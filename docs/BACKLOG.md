@@ -12,7 +12,7 @@ Dernière mise à jour : 31 octobre 2026
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
 - [x] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
 - [x] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
-- [ ] Chantier 1 : `OWNER_UID` dans `functions/.env.slzr-4701d`, jeton `INGEST_TOKEN`, `firebase deploy --only functions`, test `curl`
+- [x] Chantier 1 : `OWNER_UID` dans `functions/.env.slzr-4701d`, jeton `INGEST_TOKEN`, `firebase deploy --only functions`, test `curl`
 - [ ] Chantier 1 : raccourci « Capture » sur l'Action Button et automatisation Apple Pay sur l'iPhone ([docs/action-button.md](action-button.md)), puis tester un rêve, une dépense et un vrai paiement Apple Pay
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
