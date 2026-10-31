@@ -96,7 +96,7 @@ Prérequis : Node 22, la CLI `firebase`, et un projet Firebase en offre Blaze av
 echo "VITE_FIREBASE_API_KEY=<clé>" > web/.env.local   # gardée hors de git
 (cd functions && npm ci) && (cd web && npm ci)
 
-openssl rand -base64 32 | tee ingest-token.txt | firebase functions:secrets:set INGEST_TOKEN --data-file=-
+openssl rand -hex 32 | tee ingest-token.txt | firebase functions:secrets:set INGEST_TOKEN --data-file=-
 firebase deploy
 ```
 

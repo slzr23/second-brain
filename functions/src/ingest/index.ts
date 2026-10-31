@@ -7,10 +7,14 @@ import { INGEST_TOKEN, OWNER_UID } from "../lib/params";
 import { buildRecord } from "./build";
 import { ingestPayload } from "./schema";
 
-/** Constant-time comparison; hashing first makes both buffers the same length. */
-function tokenMatches(received: string, expected: string): boolean {
-  const a = createHash("sha256").update(received).digest();
-  const b = createHash("sha256").update(expected).digest();
+/**
+ * Constant-time comparison; hashing first makes both buffers the same length.
+ * Both sides are trimmed: a secret set with `openssl rand … | firebase functions:secrets:set
+ * --data-file=-` keeps openssl's trailing newline, which a header never carries.
+ */
+export function tokenMatches(received: string, expected: string): boolean {
+  const a = createHash("sha256").update(received.trim()).digest();
+  const b = createHash("sha256").update(expected.trim()).digest();
   return timingSafeEqual(a, b);
 }
 
