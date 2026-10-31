@@ -583,3 +583,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .range-change.down { color: var(--red); }
 .range-change .secondary { font-weight: 400; }
 .more-button { display: block; width: 100%; color: var(--accent); font-size: 17px; font-weight: 500; text-align: center; padding: 14px; }
+
+/* ---------- Hydration ---------- */
+.water-bar { height: 8px; border-radius: 4px; background: var(--fill); margin: 14px 0 18px; overflow: hidden; }
+.water-bar span { display: block; height: 100%; border-radius: 4px; background: var(--blue); transition: width 0.6s ease; }
+.water-week { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: end; height: 76px; }
+.water-week > span { justify-self: center; width: 100%; max-width: 28px; border-radius: 6px; background: var(--blue); opacity: 0.4; }
+.water-week > span.today { opacity: 1; }
+.water-goal { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--label-3); pointer-events: none; }
+.water-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 6px; text-align: center; font-size: 13px; color: var(--label-2); font-weight: 500; }

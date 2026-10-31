@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildRecord } from "../src/ingest/build";
+import { buildRecord, type IngestRecord } from "../src/ingest/build";
 import { ingestPayload } from "../src/ingest/schema";
 
 const now = new Date("2026-10-23T20:45:00Z");
-const build = (body: unknown) => buildRecord(ingestPayload.parse(body), now);
+/** Entries and transactions only: water goes to a daily total (see volume.test.ts). */
+const build = (body: unknown) => buildRecord(ingestPayload.parse(body), now) as Extract<IngestRecord, { data: unknown }>;
 
 describe("ingest payload → Firestore record", () => {
   it("stores a dream with normalized tags and its week", () => {
@@ -51,14 +52,13 @@ describe("ingest payload → Firestore record", () => {
   it("rejects empty text, unknown types and zero amounts; an unknown necessity stays unsorted", () => {
     expect(ingestPayload.safeParse({ type: "note", text: "   " }).success).toBe(false);
     expect(ingestPayload.safeParse({ type: "todo", text: "x" }).success).toBe(false);
-    expect(ingestPayload.parse({ type: "expense", amount: 3, label: "x", necessity: "vital" }).necessity).toBeUndefined();
+    expect(ingestPayload.parse({ type: "expense", amount: 3, label: "x", necessity: "vital" })).toMatchObject({ necessity: undefined });
     expect(() => build({ type: "expense", amount: "0,00", label: "Rien" })).toThrow(/nul/);
   });
 });
 
 describe("necessity from a Shortcut list", () => {
-  it("accepts any case and leaves anything else unsorted", async () => {
-    const { ingestPayload } = await import("../src/ingest/schema");
+  it("accepts any case and leaves anything else unsorted", () => {
     const read = (necessity: string) => ingestPayload.parse({ type: "expense", amount: "3", label: "Café", necessity });
     expect(read("Social")).toMatchObject({ necessity: "social" });
     expect(read("plus tard")).toMatchObject({ necessity: undefined });

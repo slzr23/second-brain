@@ -2,7 +2,7 @@
 
 Où en est le projet. Mis à jour à chaque livraison : ce qui est fait, ce qui attend une action de ma part, ce qui vient ensuite.
 
-Dernière mise à jour : 31 octobre 2026
+Dernière mise à jour : 1er novembre 2026
 
 ## 🙋 À faire de mon côté
 
@@ -72,6 +72,9 @@ Dernière mise à jour : 31 octobre 2026
 - Import de l'historique Strava (fichier .json) : toutes les activités, distance, allure, durée, dénivelé, effort relatif, FC moyenne et max des sorties récentes
 - Semaine calculée à partir des sorties : volume, nombre de sorties, durée, FC moyenne, comparaison avec la moyenne des 4 semaines précédentes
 - Liste des activités par sport (course, foot, vélo, natation…)
+
+**Santé**
+- Hydratation : chaque verre envoyé depuis l'Action Button (« Eau »), total du jour contre un objectif de 2 L et les 7 derniers jours dans l'onglet Sport
 
 **Pensées**
 - Capture d'un rêve ou d'une note en 2 secondes avec l'Action Button

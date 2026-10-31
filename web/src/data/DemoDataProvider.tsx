@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DataContext } from "./context";
-import { demoActivities, demoDreamReport, demoEntries, demoHoldings, demoTransactions, demoWeek } from "./demo";
+import { demoActivities, demoHydration, demoDreamReport, demoEntries, demoHoldings, demoTransactions, demoWeek } from "./demo";
 import { mergeHistory } from "../import/history";
 import { accountHoldingId, trackerFor, type DataSource, type Entry, type Holding, type Transaction } from "./types";
 
@@ -27,6 +27,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       week: demoWeek,
       holdings,
       netWorthDays: [],
+      hydration: demoHydration,
       async addEntry(kind, text) {
         const entry: Entry = { id: crypto.randomUUID(), kind, text, tags: [], createdAt: new Date() };
         setEntries((list) => [entry, ...list]);

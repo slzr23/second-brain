@@ -1,10 +1,13 @@
 import { parseAmountToCents } from "../lib/amount";
-import { isoWeekId } from "../lib/week";
+import { formatVolume, parseVolumeMl } from "../lib/volume";
+import { isoWeekId, localDateKey } from "../lib/week";
 import type { IngestPayload } from "./schema";
 
 export type IngestRecord =
   | { collection: "entries"; data: EntryDoc; message: string }
-  | { collection: "transactions"; data: TransactionDoc; message: string };
+  | { collection: "transactions"; data: TransactionDoc; message: string }
+  /** Added to the day's total (users/{uid}/hydration/{day}); the message gets the new total. */
+  | { collection: "hydration"; day: string; drink: { ml: number; at: Date }; message: string };
 
 export interface EntryDoc {
   kind: "dream" | "note";
@@ -40,6 +43,10 @@ const dayToDate = (day: string | undefined, now: Date) => (day ? new Date(`${day
 /** Maps a validated Shortcut payload to the Firestore document it creates. Pure, so it is unit-tested. */
 export function buildRecord(payload: IngestPayload, now: Date): IngestRecord {
   switch (payload.type) {
+    case "water": {
+      const ml = parseVolumeMl(payload.amount);
+      return { collection: "hydration", day: localDateKey(now), drink: { ml, at: now }, message: `+${formatVolume(ml)}` };
+    }
     case "dream":
     case "note":
       return {

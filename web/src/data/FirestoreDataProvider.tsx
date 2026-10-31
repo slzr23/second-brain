@@ -21,7 +21,7 @@ import { db } from "../lib/firebase";
 import { DataContext } from "./context";
 import { mergeHistory } from "../import/history";
 import type { DaySnapshot } from "../lib/finance";
-import { accountHoldingId, trackerFor, type Activity, type DataSource, type DreamReport, type Entry, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
+import { accountHoldingId, trackerFor, type Activity, type DataSource, type DreamReport, type Entry, type HydrationDay, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
 
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
@@ -78,6 +78,8 @@ const mapActivity = (id: string, d: DocumentData): Activity => ({
   report: d.report ?? null,
 });
 
+const mapHydration = (id: string, d: DocumentData): HydrationDay => ({ day: d.day ?? id, ml: d.ml ?? 0 });
+
 const mapSnapshot = (_id: string, d: DocumentData): DaySnapshot => ({ day: d.day, byGroup: d.byGroup ?? {} });
 
 const mapReport = (_id: string, d: DocumentData): DreamReport => ({
@@ -112,6 +114,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
   // The whole history (a few thousand small documents): yearly bars and daily balances need it.
   const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction, 0, 120);
   const netWorthDays = useLiveCollection(uid, "netWorth", "day", mapSnapshot, 400);
+  const hydration = useLiveCollection(uid, "hydration", "day", mapHydration, 31);
   // The whole history (a few hundred documents): weekly averages and records need it.
   const activities = useLiveCollection(uid, "activities", "date", mapActivity, 1000);
   const reports = useLiveCollection(uid, "dreamReports", "weekId", mapReport, 1);
@@ -136,6 +139,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
       week,
       holdings: holdings ?? [],
       netWorthDays: netWorthDays ?? [],
+      hydration: hydration ?? [],
       async addEntry(kind, text) {
         await addDoc(collection(db, "users", uid, "entries"), {
           kind,
@@ -243,7 +247,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
         });
       },
     }),
-    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings, netWorthDays],
+    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings, netWorthDays, hydration],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

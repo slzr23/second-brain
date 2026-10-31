@@ -138,6 +138,12 @@ export interface Activity {
   report: { summary: string } | null;
 }
 
+export interface HydrationDay {
+  /** "YYYY-MM-DD", Paris time. */
+  day: string;
+  ml: number;
+}
+
 export const isRun = (a: Pick<Activity, "sport">) => ["Run", "TrailRun", "VirtualRun"].includes(a.sport);
 
 /** An activity read from an export, before it is stored. */
@@ -173,6 +179,8 @@ export interface DataSource {
   holdings: Holding[];
   /** Evening values per account, stored by the server, newest first. */
   netWorthDays: DaySnapshot[];
+  /** Water drunk per day (latest first), sent from the iPhone. */
+  hydration: HydrationDay[];
   addEntry(kind: EntryKind, text: string): Promise<void>;
   addTransaction(transaction: NewTransaction): Promise<void>;
   tagTransaction(id: string, necessity: Necessity): Promise<void>;

@@ -2,7 +2,7 @@
 
 Deux raccourcis iOS envoient tout vers l'endpoint `ingest` :
 
-- **Capture**, lancé par l'Action Button : rêve, note, dépense ou entrée d'argent.
+- **Capture**, lancé par l'Action Button : rêve, note, dépense, entrée d'argent ou eau bue.
 - **Paiement Apple Pay**, une automatisation Cartes qui envoie chaque paiement sans rien faire.
 
 ## Avant de commencer
@@ -20,7 +20,7 @@ Le jeton reste uniquement dans tes raccourcis. Si ton téléphone est perdu, cha
 
 Dans l'app Raccourcis, crée un raccourci nommé **Capture** :
 
-1. **Choisir dans le menu** avec 4 options : `Rêve`, `Note`, `Dépense`, `Entrée`.
+1. **Choisir dans le menu** avec 5 options : `Rêve`, `Note`, `Dépense`, `Entrée`, `Eau`.
 2. Dans **Rêve** :
    - **Dicter le texte** (pratique au réveil, les yeux à moitié fermés), ou **Demander une entrée** de type Texte avec « Autoriser plusieurs lignes ».
    - **Obtenir le contenu de l'URL** : méthode `POST`, en-tête `Authorization` = `Bearer <jeton>`, corps `JSON` :
@@ -37,7 +37,11 @@ Dans l'app Raccourcis, crée un raccourci nommé **Capture** :
      - `label` = le texte
      - `necessity` = *Élément choisi*. `plus tard` (ou toute autre valeur) laisse la dépense dans « À trier ».
 5. Dans **Entrée** : montant et libellé, avec `type` = `income`.
-6. Après le menu : **Obtenir la valeur du dictionnaire** `message` dans le résultat, puis **Afficher la notification**. Tu verras par exemple « Dépense de 12,50 € enregistrée ».
+6. Dans **Eau** :
+   - **Liste** avec `25 cl`, `33 cl`, `50 cl`, `75 cl`, `1 L`, puis **Choisir dans la liste** (« Combien ? »)
+   - **Obtenir le contenu de l'URL**, corps JSON : `type` = `water`, `amount` (texte) = *Élément choisi*
+   - La notification affiche le total du jour, par exemple « +25 cl · 1,25 L aujourd'hui ».
+7. Après le menu : **Obtenir la valeur du dictionnaire** `message` dans le résultat, puis **Afficher la notification**. Tu verras par exemple « Dépense de 12,50 € enregistrée ».
 
 Ensuite : **Réglages > Bouton Action > Raccourci > Capture**.
 
@@ -62,6 +66,7 @@ Ces paiements arrivent sans catégorie : tu les tries d'un geste dans l'onglet F
 { "type": "expense",   "amount": "12,50", "label": "Bières", "necessity": "social", "date": "2026-10-22" }
 { "type": "income",    "amount": 900, "label": "Salaire" }
 { "type": "apple_pay", "amount": "4,20 €", "merchant": "Boulangerie", "card": "Visa" }
+{ "type": "water",     "amount": "25 cl" }                         // aussi "0,5 L", "330 ml" ou 250 (ml)
 ```
 
 Les montants acceptent les formats iOS français (`1 234,56 €`). Le signe est déduit du type.

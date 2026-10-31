@@ -16,6 +16,7 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { WeekBars } from "../charts/WeekBars";
+import { Hydration } from "../components/Hydration";
 import { Ring } from "../components/Ring";
 import { useData } from "../data/context";
 import { isRun, type Activity } from "../data/types";
@@ -229,6 +230,7 @@ export function Sport() {
       <section className="section" style={{ marginTop: 12 }}>
         <Week />
       </section>
+      <Hydration />
       <Zones />
       <Activities />
     </>

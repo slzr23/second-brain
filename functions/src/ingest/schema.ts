@@ -36,6 +36,8 @@ export const ingestPayload = z.discriminatedUnion("type", [
   z.object({ type: z.literal("income"), amount, label, date }),
   // Sent by the iOS Wallet "Transaction" automation after an Apple Pay payment.
   z.object({ type: z.literal("apple_pay"), amount, merchant: label, card: optionalText }),
+  // A drink: "25 cl", "0,5 L", 250 (ml).
+  z.object({ type: z.literal("water"), amount }),
 ]);
 
 export type IngestPayload = z.infer<typeof ingestPayload>;
