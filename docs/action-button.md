@@ -30,12 +30,12 @@ Dans l'app Raccourcis, crée un raccourci nommé **Capture** :
 4. Dans **Dépense** :
    - **Demander une entrée** de type Nombre : « Combien ? »
    - **Demander une entrée** de type Texte : « Pour quoi ? »
-   - **Choisir dans la liste** : `essentiel`, `social`, `superflu`, `plus tard`
+   - **Liste** avec `essentiel`, `social`, `superflu`, `plus tard`, puis **Choisir dans la liste** (sa valeur : la variable *Liste*)
    - **Obtenir le contenu de l'URL**, corps JSON :
      - `type` = `expense`
      - `amount` (nombre) = le montant
      - `label` = le texte
-     - `necessity` = l'élément choisi. Si c'est `plus tard`, ne mets pas ce champ : la dépense apparaîtra dans « À trier ».
+     - `necessity` = *Élément choisi*. `plus tard` (ou toute autre valeur) laisse la dépense dans « À trier ».
 5. Dans **Entrée** : montant et libellé, avec `type` = `income`.
 6. Après le menu : **Obtenir la valeur du dictionnaire** `message` dans le résultat, puis **Afficher la notification**. Tu verras par exemple « Dépense de 12,50 € enregistrée ».
 

@@ -48,10 +48,19 @@ describe("ingest payload → Firestore record", () => {
     });
   });
 
-  it("rejects empty text, unknown types, bad necessity and zero amounts", () => {
+  it("rejects empty text, unknown types and zero amounts; an unknown necessity stays unsorted", () => {
     expect(ingestPayload.safeParse({ type: "note", text: "   " }).success).toBe(false);
     expect(ingestPayload.safeParse({ type: "todo", text: "x" }).success).toBe(false);
-    expect(ingestPayload.safeParse({ type: "expense", amount: 3, label: "x", necessity: "vital" }).success).toBe(false);
+    expect(ingestPayload.parse({ type: "expense", amount: 3, label: "x", necessity: "vital" }).necessity).toBeUndefined();
     expect(() => build({ type: "expense", amount: "0,00", label: "Rien" })).toThrow(/nul/);
+  });
+});
+
+describe("necessity from a Shortcut list", () => {
+  it("accepts any case and leaves anything else unsorted", async () => {
+    const { ingestPayload } = await import("../src/ingest/schema");
+    const read = (necessity: string) => ingestPayload.parse({ type: "expense", amount: "3", label: "Café", necessity });
+    expect(read("Social")).toMatchObject({ necessity: "social" });
+    expect(read("plus tard")).toMatchObject({ necessity: undefined });
   });
 });

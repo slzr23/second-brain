@@ -17,7 +17,17 @@ const optionalText = z.string().trim().max(200).optional();
 const date = z.iso.date().optional();
 
 export const NECESSITIES = ["essentiel", "social", "superflu"] as const;
-const necessity = z.enum(NECESSITIES).optional();
+/**
+ * "Essentiel", "social"… from a Shortcut list. Anything else ("plus tard", empty)
+ * leaves the expense unsorted: it then shows up in "À trier".
+ */
+const necessity = z
+  .string()
+  .optional()
+  .transform((value) => {
+    const v = value?.trim().toLowerCase();
+    return NECESSITIES.find((n) => n === v);
+  });
 
 export const ingestPayload = z.discriminatedUnion("type", [
   z.object({ type: z.literal("dream"), text, tags }),
