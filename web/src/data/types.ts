@@ -182,7 +182,8 @@ export interface DataSource {
   ownerName: string | null;
   /** Ids of the lines already stored for this account, to import only new ones. */
   existingTransactionIds(account: string): Promise<Set<string>>;
-  importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void): Promise<void>;
+  /** `replaces`: app entries (Apple Pay, typed expenses) that these bank lines take over, deleted in the same write. */
+  importTransactions(items: ImportedTransaction[], onProgress?: (done: number) => void, replaces?: string[]): Promise<void>;
   /** Creates or refreshes activities under their Strava id; a report already written is kept. */
   importActivities(items: ImportedActivity[], onProgress?: (done: number) => void): Promise<void>;
   /** Stores a bank account's balance and its history in Patrimoine. */

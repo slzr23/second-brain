@@ -7,7 +7,8 @@ import { parseImportFile, summarize, type ImportedTransaction, type ImportSummar
 import { cryptoPositions, type CryptoPosition, type CryptoTrade } from "../import/crypto";
 import { monthlyBalances } from "../import/history";
 import { summarizeActivities, type ActivitySummary } from "../import/strava";
-import type { ImportedActivity } from "../data/types";
+import { matchAppEntries, mergeAppEntry } from "../import/reconcile";
+import type { ImportedActivity, Transaction } from "../data/types";
 import { sportLabel } from "../lib/sport";
 import { formatEuros } from "../lib/format";
 
@@ -42,6 +43,8 @@ type State =
       format: string;
       items: ImportedTransaction[];
       summary: ImportSummary;
+      /** New bank line id → the same payment already entered in the app. */
+      matches: Map<string, Transaction>;
     }
   | {
       step: "crypto";
@@ -58,7 +61,7 @@ type State =
  * (they become holdings). Several files can be picked at once: Bitstack gives one per year.
  */
 export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { ownerName, existingTransactionIds, importTransactions, importActivities, activities, saveAccountBalance, saveComputedHolding } = useData();
+  const { ownerName, existingTransactionIds, importTransactions, importActivities, activities, transactions, saveAccountBalance, saveComputedHolding } = useData();
   const [balance, setBalance] = useState("");
   const [account, setAccount] = useState(ACCOUNTS[0]);
   const [files, setFiles] = useState<File[]>([]);
@@ -73,9 +76,9 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   };
   // Read through a ref: the data source changes on every snapshot (including the
   // ones caused by the import itself), which must not restart the preview.
-  const data = useRef({ ownerName, existingTransactionIds, activityIds: activities.map((a) => a.id) });
+  const data = useRef({ ownerName, existingTransactionIds, transactions, activityIds: activities.map((a) => a.id) });
   const guessed = useRef(false);
-  data.current = { ownerName, existingTransactionIds, activityIds: activities.map((a) => a.id) };
+  data.current = { ownerName, existingTransactionIds, transactions, activityIds: activities.map((a) => a.id) };
 
   useEffect(() => {
     if (!open) {
@@ -118,13 +121,8 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
           }
           const items = parsed.flatMap((p) => (p.kind === "bank" ? p.items : []));
           const existing = await data.current.existingTransactionIds(ctx.account);
-          if (!cancelled)
-            setState({
-              step: "bank",
-              format,
-              items,
-              summary: summarize(items, existing),
-            });
+          const summary = summarize(items, existing);
+          if (!cancelled) setState({ step: "bank", format, items, summary, matches: matchAppEntries(summary.fresh, data.current.transactions) });
         } else {
           const trades: CryptoTrade[] = parsed.flatMap((p) => (p.kind === "crypto" ? p.trades : []));
           const positions = cryptoPositions(trades).filter((p) => p.walletUnits > 0 || p.platforms.some((pl) => pl.units > 0));
@@ -157,11 +155,20 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   async function runBank() {
     if (state.step !== "bank" || !balanceValid) return;
     const name = account.trim();
-    const items = state.summary.fresh;
+    const { matches } = state;
+    // Lines that take over an app entry go first, in the same batches as its deletion.
+    const items = [...state.summary.fresh]
+      .sort((a, b) => Number(matches.has(b.id)) - Number(matches.has(a.id)))
+      .map((item) => (matches.has(item.id) ? mergeAppEntry(item, matches.get(item.id)!) : item));
     const all = state.items;
     setState({ step: "writing", done: 0, total: items.length });
     try {
-      if (items.length) await importTransactions(items, (done) => setState({ step: "writing", done, total: items.length }));
+      if (items.length)
+        await importTransactions(
+          items,
+          (done) => setState({ step: "writing", done, total: items.length }),
+          [...matches.values()].map((t) => t.id),
+        );
       // The whole file (not only the new lines) rebuilds the balance history.
       if (balanceCents !== null) await saveAccountBalance(name, balanceCents, monthlyBalances(all, balanceCents));
       toast.success(items.length ? `${count.format(items.length)} opérations importées dans ${name}` : `Solde de ${name} mis à jour`);
@@ -366,6 +373,12 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
                   <span>Dépenses à classer</span>
                   <span className="value num">{count.format(s.unsorted)}</span>
                 </div>
+                {state.step === "bank" && state.matches.size > 0 && (
+                  <div className="field-row">
+                    <span>Déjà saisies dans l'app (fusionnées)</span>
+                    <span className="value num">{count.format(state.matches.size)}</span>
+                  </div>
+                )}
               </div>
             )}
 

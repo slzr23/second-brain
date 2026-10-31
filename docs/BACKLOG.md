@@ -2,7 +2,7 @@
 
 Où en est le projet. Mis à jour à chaque livraison : ce qui est fait, ce qui attend une action de ma part, ce qui vient ensuite.
 
-Dernière mise à jour : 30 octobre 2026
+Dernière mise à jour : 31 octobre 2026
 
 ## 🙋 À faire de mon côté
 
@@ -12,22 +12,27 @@ Dernière mise à jour : 30 octobre 2026
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
 - [x] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
 - [x] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
+- [ ] Chantier 1 : `OWNER_UID` dans `functions/.env.slzr-4701d`, jeton `INGEST_TOKEN`, `firebase deploy --only functions`, test `curl`
+- [ ] Chantier 1 : raccourci « Capture » sur l'Action Button et automatisation Apple Pay sur l'iPhone ([docs/action-button.md](action-button.md)), puis tester un rêve, une dépense et un vrai paiement Apple Pay
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
 
-**Finance : refaire le point sur les comptes.** Une fois les imports corrigés, chaque compte doit tomber juste à l'euro près, ou avoir un écart expliqué.
+**Priorité : que les données arrivent toutes seules.** Tant qu'il faut importer à la main, l'app ne sert pas au quotidien ; le travail de Claude (tri, comptes rendus, synthèses) vient ensuite.
+
+**Chantier 1 : captures iPhone.** Le code est prêt (endpoint `ingest`, Action Button, automatisation Apple Pay) ; reste la configuration côté serveur et iPhone. Les paiements Apple Pay et les dépenses saisies sont fusionnés avec les lignes du relevé bancaire à l'import, pour ne jamais compter un paiement deux fois.
 
 ## 📋 À venir, dans l'ordre
 
-1. **Finance : trier l'historique avec Claude, carte par carte.** Environ 870 dépenses importées ne sont pas classées. Claude propose essentiel, social ou superflu par lots ; je valide en glissant chaque carte (inspiré du *Swipe deck* de bencho.dev) : à droite pour accepter, à gauche pour corriger. Le même geste remplace les trois boutons de « À trier ».
-2. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée : « Rêve enregistré », « −12,50 € Kebab ».
-3. **Sport : FC de tout l'historique.** L'import contient la FC moyenne et max des sorties depuis août 2026 ; compléter les plus anciennes si les tendances sur plusieurs années deviennent utiles.
-4. **Sport : le tableau de bord** : volume de la semaine, nombre de sorties, allures, zones cardiaques.
+1. **Finance : synchronisation bancaire automatique** (Enable Banking, usage personnel sur ses propres comptes) : opérations et soldes du compte courant et du Livret A chaque nuit, sans CSV. Vérifier les conditions et la durée du consentement (à renouveler tous les 90 à 180 jours en général). La même fusion avec Apple Pay s'applique.
+2. **Sport et sommeil : un raccourci Apple Santé chaque matin** : séances de la veille (Garmin les écrit dans Santé), FC, sommeil et, si disponible, FC au repos. Remplace le blocage de l'API Strava. Vérifier d'abord ce que Garmin Connect partage (Santé › Partage › Garmin Connect).
+3. **Crypto et PEE : rappel mensuel** pour réimporter Bitstack, Revolut et mettre à jour les parts du PEE (pas d'API ; les cours, eux, sont déjà mis à jour chaque soir).
+4. **Finance : Claude classe les dépenses.** Chaque nouvelle dépense reçoit une proposition (essentiel, social, superflu), et l'historique (~870) se trie carte par carte en glissant (inspiré du *Swipe deck* de bencho.dev).
 5. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
-6. **Sport : sommeil et FC au repos** via un raccourci Apple Santé chaque matin.
-7. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
-8. **Finance : synchronisation bancaire automatique** (Enable Banking) pour ne plus exporter de CSV.
+6. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
+7. **Sport : le tableau de bord** : allures, zones cardiaques, tendances.
+8. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée.
+9. **Sport : FC de tout l'historique** (l'import la contient depuis août 2026), si les tendances sur plusieurs années deviennent utiles.
 
 ### Plus tard
 
@@ -75,6 +80,7 @@ Dernière mise à jour : 30 octobre 2026
 **Finance**
 - Saisie de toute entrée ou sortie d'argent depuis le bouton + ou l'Action Button, import automatique des paiements Apple Pay
 - Tri des dépenses : essentiel, social, superflu
+- Fusion à l'import : un paiement Apple Pay ou une dépense saisie dans l'app et la même ligne du relevé ne comptent qu'une fois (même montant, débit dans les 5 jours) ; le libellé et la catégorie donnés dans l'app sont gardés
 - Import des relevés Caisse d'Épargne (compte courant, Livret A), avec détection des virements entre mes comptes
 - Import des historiques Bitstack et Revolut, positions calculées par plateforme et wallet ; plusieurs fichiers ajoutés un par un ou par glisser-déposer
 - Patrimoine global avec répartition en anneau

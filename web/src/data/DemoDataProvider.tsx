@@ -64,9 +64,9 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       async existingTransactionIds(account) {
         return new Set(transactions.filter((t) => t.account === account).map((t) => t.id));
       },
-      async importTransactions(items, onProgress) {
+      async importTransactions(items, onProgress, replaces = []) {
         const added: Transaction[] = items.map((i) => ({ ...i, merchant: null, source: "bank" }));
-        setTransactions((list) => [...list, ...added].sort((a, b) => b.date.getTime() - a.date.getTime()));
+        setTransactions((list) => [...list.filter((t) => !replaces.includes(t.id)), ...added].sort((a, b) => b.date.getTime() - a.date.getTime()));
         onProgress?.(items.length);
       },
       async importActivities(items, onProgress) {

@@ -192,22 +192,20 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
         const snap = await getDocs(query(collection(db, "users", uid, "transactions"), where("account", "==", account)));
         return new Set(snap.docs.map((d) => d.id));
       },
-      async importTransactions(items, onProgress) {
-        // Firestore batches hold at most 500 writes.
-        for (let i = 0; i < items.length; i += 400) {
+      async importTransactions(items, onProgress, replaces = []) {
+        const col = collection(db, "users", uid, "transactions");
+        // App entries taken over by bank lines are deleted alongside the first lines,
+        // in the same batches, so a payment is never counted twice even if the import
+        // stops halfway. Batches hold at most 500 writes: 200 lines plus 200 deletions.
+        const pending = [...replaces];
+        for (let i = 0; i < items.length; i += 200) {
           const batch = writeBatch(db);
-          for (const { id, date, ...item } of items.slice(i, i + 400)) {
-            batch.set(doc(db, "users", uid, "transactions", id), {
-              ...item,
-              date: Timestamp.fromDate(date),
-              currency: "EUR",
-              merchant: null,
-              source: "bank",
-              createdAt: serverTimestamp(),
-            });
+          for (const { id, date, ...item } of items.slice(i, i + 200)) {
+            batch.set(doc(col, id), { ...item, date: Timestamp.fromDate(date), currency: "EUR", merchant: null, source: "bank", createdAt: serverTimestamp() });
           }
+          for (const id of pending.splice(0, 200)) batch.delete(doc(col, id));
           await batch.commit();
-          onProgress?.(Math.min(i + 400, items.length));
+          onProgress?.(Math.min(i + 200, items.length));
         }
       },
       async importActivities(items, onProgress) {
