@@ -22,10 +22,10 @@ Dernière mise à jour : 1er novembre 2026
 1. **Finance : synchronisation bancaire automatique** (Enable Banking, usage personnel sur ses propres comptes) : opérations et soldes du compte courant et du Livret A chaque nuit, sans CSV. Vérifier les conditions et la durée du consentement (à renouveler tous les 90 à 180 jours en général). La fusion avec Apple Pay et les dépenses saisies s'applique.
 
 2. **Finance : séparer Patrimoine et Compte courant.** Le compte courant monte à chaque salaire et redescend avec les dépenses : mélangé au patrimoine, il rend la courbe illisible alors que le patrimoine, lui, bouge peu. L'onglet Finance devient deux parties :
-   - **Patrimoine** : l'épargne et les placements (Livret A, PEE, crypto), avec sa courbe d'évolution et sa répartition. *À confirmer : compte courant exclu.*
+   - **Patrimoine** : l'épargne et les placements seulement (Livret A, PEE, crypto), avec sa courbe d'évolution et sa répartition. Le compte courant n'y est plus, et pas de total « tout compris ».
    - **Compte courant** :
      - courbe du solde ;
-     - mois calé sur le rythme réel : salaire vers le 27, loyer juste après, aides le 5. *À confirmer : un « mois » qui va du salaire au salaire suivant.*
+     - mois calé sur le salaire : un « mois » va du 27 au 26 du mois suivant, donc salaire et loyer dans le même mois, aides du 5 au milieu ;
      - argent gagné du mois, détaillé (salaire, aides, remboursements…), et comparé au mois précédent ;
      - dépenses du mois par catégorie (combien en courses, en sorties…), et comparées au mois précédent ;
      - les dépenses à trier.
@@ -37,9 +37,8 @@ Dernière mise à jour : 1er novembre 2026
 5. **Sport : n'afficher que les 3 dernières activités**, avec un lien vers l'historique complet.
 
 6. **Pensées : catégories de notes et envies d'achat.**
-   - Choisir le type de note depuis l'Action Button : par exemple *note de fond* (réflexion) ou *envie d'achat*.
-   - Une envie d'achat (objet, prix) rejoint une liste dans Finance, où Claude dit si c'est raisonnable maintenant compte tenu du budget du mois, ou s'il vaut mieux attendre.
-   - *À préciser : la liste des types de notes.*
+   - Types de notes, choisis depuis l'Action Button : *Idée*, *À faire*, *Réflexion* (note de fond) et *Envie d'achat*. *Proposition, à valider.*
+   - Une envie d'achat précise son genre (livre, vêtement, tech, autre) et un prix, si connu. Elle rejoint une liste dans Finance, où Claude dit si c'est raisonnable maintenant compte tenu du budget du mois, ou s'il vaut mieux attendre.
 
 7. **Crypto et PEE : rappel mensuel** pour réimporter Bitstack, Revolut et mettre à jour les parts du PEE (pas d'API ; les cours, eux, sont déjà mis à jour chaque soir).
 
