@@ -6,36 +6,56 @@ Dernière mise à jour : 1er novembre 2026
 
 ## 🙋 À faire de mon côté
 
-- [x] Déployer la dernière version : `git pull`, `npm --prefix web install`, `firebase deploy --only hosting`
-- [x] Réimporter les 5 fichiers crypto (4 Bitstack et Revolut) et vérifier que la ligne Bitstack couvre bien jusqu'à septembre 2026
-- [x] Renseigner le solde réel du compte courant et du Livret A avec les lignes « Ajouter » de Patrimoine
+- [ ] Tester l'automatisation Apple Pay sur un vrai paiement : il doit arriver tout seul dans « À trier »
+- [ ] Changer le jeton d'ingestion (il est apparu sur une capture d'écran), puis le remplacer dans les 5 raccourcis du dossier Capture
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
-- [x] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
-- [x] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
-- [x] Chantier 1 : `OWNER_UID` dans `functions/.env.slzr-4701d`, jeton `INGEST_TOKEN`, `firebase deploy --only functions`, test `curl`
-- [x] Chantier 1 : raccourci « Capture » sur l'Action Button et automatisation Apple Pay sur l'iPhone ([docs/action-button.md](action-button.md)), puis tester un rêve, une dépense et un vrai paiement Apple Pay
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
 
 **Priorité : que les données arrivent toutes seules.** Tant qu'il faut importer à la main, l'app ne sert pas au quotidien ; le travail de Claude (tri, comptes rendus, synthèses) vient ensuite.
 
-**Chantier 1 : captures iPhone, terminé.** Rêve, note, dépense, entrée d'argent et eau depuis l'Action Button, paiements Apple Pay automatiques : tout arrive dans l'app. Reste à vérifier sur un vrai paiement Apple Pay, puis à changer le jeton (il est apparu sur une capture d'écran). Prochain chantier : la synchronisation bancaire.
+**Où on en est :** les captures iPhone fonctionnent (rêves, notes, dépenses, entrées d'argent, eau). Côté finance, seul Apple Pay est relié en direct, et pas encore testé sur un vrai paiement : les comptes bancaires restent à brancher.
 
 ## 📋 À venir, dans l'ordre
 
-1. **Finance : synchronisation bancaire automatique** (Enable Banking, usage personnel sur ses propres comptes) : opérations et soldes du compte courant et du Livret A chaque nuit, sans CSV. Vérifier les conditions et la durée du consentement (à renouveler tous les 90 à 180 jours en général). La même fusion avec Apple Pay s'applique.
-2. **Sport et sommeil : un raccourci Apple Santé chaque matin** : séances de la veille (Garmin les écrit dans Santé), FC, sommeil et, si disponible, FC au repos. Remplace le blocage de l'API Strava. Vérifier d'abord ce que Garmin Connect partage (Santé › Partage › Garmin Connect).
-3. **Crypto et PEE : rappel mensuel** pour réimporter Bitstack, Revolut et mettre à jour les parts du PEE (pas d'API ; les cours, eux, sont déjà mis à jour chaque soir).
-4. **Finance : Claude classe les dépenses.** Chaque nouvelle dépense reçoit une proposition (essentiel, social, superflu), et l'historique (~870) se trie carte par carte en glissant (inspiré du *Swipe deck* de bencho.dev).
-5. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
-6. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
-7. **Sport : le tableau de bord** : allures, zones cardiaques, tendances.
-8. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée.
-9. **Sport : FC de tout l'historique** (l'import la contient depuis août 2026), si les tendances sur plusieurs années deviennent utiles.
+1. **Finance : synchronisation bancaire automatique** (Enable Banking, usage personnel sur ses propres comptes) : opérations et soldes du compte courant et du Livret A chaque nuit, sans CSV. Vérifier les conditions et la durée du consentement (à renouveler tous les 90 à 180 jours en général). La fusion avec Apple Pay et les dépenses saisies s'applique.
+
+2. **Finance : séparer Patrimoine et Compte courant.** Le compte courant monte à chaque salaire et redescend avec les dépenses : mélangé au patrimoine, il rend la courbe illisible alors que le patrimoine, lui, bouge peu. L'onglet Finance devient deux parties :
+   - **Patrimoine** : l'épargne et les placements (Livret A, PEE, crypto), avec sa courbe d'évolution et sa répartition. *À confirmer : compte courant exclu.*
+   - **Compte courant** :
+     - courbe du solde ;
+     - mois calé sur le rythme réel : salaire vers le 27, loyer juste après, aides le 5. *À confirmer : un « mois » qui va du salaire au salaire suivant.*
+     - argent gagné du mois, détaillé (salaire, aides, remboursements…), et comparé au mois précédent ;
+     - dépenses du mois par catégorie (combien en courses, en sorties…), et comparées au mois précédent ;
+     - les dépenses à trier.
+
+3. **Finance : catégories automatiques et tri par Claude.** Chaque dépense reçoit une catégorie déduite du marchand ou du libellé (Courses, Sorties, Transport, Logement et factures, Abonnements, Santé, Shopping, Loisirs et sport, Voyages, Autres), corrigeable d'un geste. Claude propose aussi la nécessité (essentiel, social, superflu) ; l'historique (~870) se trie carte par carte en glissant (inspiré du *Swipe deck* de bencho.dev).
+
+4. **Sport et sommeil : un raccourci Apple Santé chaque matin** : séances de la veille (Garmin les écrit dans Santé), FC, sommeil et, si disponible, FC au repos. Remplace le blocage de l'API Strava. Vérifier d'abord ce que Garmin Connect partage (Santé › Partage › Garmin Connect). Le sommeil s'affiche dans l'app dès que Garmin est relié.
+
+5. **Sport : n'afficher que les 3 dernières activités**, avec un lien vers l'historique complet.
+
+6. **Pensées : catégories de notes et envies d'achat.**
+   - Choisir le type de note depuis l'Action Button : par exemple *note de fond* (réflexion) ou *envie d'achat*.
+   - Une envie d'achat (objet, prix) rejoint une liste dans Finance, où Claude dit si c'est raisonnable maintenant compte tenu du budget du mois, ou s'il vaut mieux attendre.
+   - *À préciser : la liste des types de notes.*
+
+7. **Crypto et PEE : rappel mensuel** pour réimporter Bitstack, Revolut et mettre à jour les parts du PEE (pas d'API ; les cours, eux, sont déjà mis à jour chaque soir).
+
+8. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
+
+9. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
+
+10. **Sport : le tableau de bord** : allures, zones cardiaques, tendances.
+
+11. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée.
+
+12. **Sport : FC de tout l'historique** (l'import la contient depuis août 2026), si les tendances sur plusieurs années deviennent utiles.
 
 ### Plus tard
 
+- **Santé : objectif d'hydratation réglable** (fixé à 2 L pour l'instant).
 - **UI : tirer pour actualiser** sur Finance, pour relancer les cours.
 - **UI : bouton + en menu radial** (inspiré de bencho.dev et Smooth UI), à la place de la feuille.
 - **UI : cartes de comptes qui s'agrandissent** depuis Patrimoine, au lieu de changer de page.
@@ -49,7 +69,7 @@ Dernière mise à jour : 1er novembre 2026
 
 ## 🧱 Bloqué ou à décider
 
-- **Nouvelles sorties après l'import Strava** : l'accord d'API Strava interdit d'envoyer les données à une IA, et le programme développeur Garmin est fermé. Pistes : refaire un fichier d'import via le connecteur Strava de Claude (comme pour l'historique), ou récupérer les entraînements depuis Apple Santé.
+- **Nouvelles sorties après l'import Strava** : l'accord d'API Strava interdit d'envoyer les données à une IA, et le programme développeur Garmin est fermé. Pistes : Apple Santé (point 4), ou un nouveau fichier d'import via le connecteur Strava de Claude en attendant.
 - **PEE Amundi** : pas d'API. Les fonds suivent le cours de l'action Airbus, mais leurs parts doivent être mises à jour à la main de temps en temps.
 - **Historique du PEE** : il n'est connu que depuis sa saisie, donc les graphiques reportent sa valeur actuelle dans le passé. Un export des opérations Amundi (versements, abondements) permettrait de reconstruire la vraie courbe.
 - **Courbe crypto exacte** : les mois passés sont valorisés au prix du dernier achat, avec une ligne droite d'un mois à l'autre. Pour suivre le vrai cours jour par jour, il faudrait récupérer l'historique des cours côté serveur.
@@ -57,16 +77,22 @@ Dernière mise à jour : 1er novembre 2026
 
 ## 🔧 Dette technique
 
+- [ ] Le jeton d'ingestion est copié dans les 5 raccourcis du dossier Capture : le changer demande 5 modifications
 - [ ] Tester les règles Firestore dans la CI (l'émulateur n'est pas installable dans mon environnement actuel)
 - [ ] Mettre à jour les captures d'écran du README avec la nouvelle partie Finance
 
 ## ✅ Fait
 
 **Socle**
-- PWA React installable sur l'iPhone, connexion Google, données rangées sous mon seul compte
-- Point d'entrée `ingest` pour l'Action Button et Apple Pay, avec jeton secret
+- PWA React installable sur l'écran d'accueil de l'iPhone, connexion Google, données rangées sous mon seul compte
+- Point d'entrée `ingest` avec jeton secret (tolérant sur la façon de l'écrire dans un raccourci)
 - CI GitHub Actions, démo publique sur données fictives
 - Interface façon iOS : gros titres, barre d'onglets en verre, mode sombre
+- Backlog tenu à jour dans le repo
+
+**Captures iPhone**
+- Dossier « Capture » sur l'Action Button : 5 raccourcis avec leurs icônes (Rêve, Note, Dépense, Entrée, Eau) et une notification de confirmation
+- Automatisation Apple Pay : chaque paiement est envoyé tout seul (à tester sur un vrai paiement)
 
 **Sport**
 - Import de l'historique Strava (fichier .json) : toutes les activités, distance, allure, durée, dénivelé, effort relatif, FC moyenne et max des sorties récentes
@@ -74,14 +100,14 @@ Dernière mise à jour : 1er novembre 2026
 - Liste des activités par sport (course, foot, vélo, natation…)
 
 **Santé**
-- Hydratation : chaque verre envoyé depuis l'Action Button (« Eau »), total du jour contre un objectif de 2 L et les 7 derniers jours dans l'onglet Sport
+- Hydratation : chaque verre envoyé depuis l'Action Button, total du jour contre un objectif de 2 L et les 7 derniers jours dans l'onglet Sport
 
 **Pensées**
-- Capture d'un rêve ou d'une note en 2 secondes avec l'Action Button
+- Capture d'un rêve ou d'une note depuis l'Action Button, en dictant ou en tapant
 - Journal filtrable
 
 **Finance**
-- Saisie de toute entrée ou sortie d'argent depuis le bouton + ou l'Action Button, import automatique des paiements Apple Pay
+- Saisie de toute entrée ou sortie d'argent depuis le bouton + ou l'Action Button, avec « plus tard » pour trier ensuite
 - Tri des dépenses : essentiel, social, superflu
 - Fusion à l'import : un paiement Apple Pay ou une dépense saisie dans l'app et la même ligne du relevé ne comptent qu'une fois (même montant, débit dans les 5 jours) ; le libellé et la catégorie donnés dans l'app sont gardés
 - Import des relevés Caisse d'Épargne (compte courant, Livret A), avec détection des virements entre mes comptes
