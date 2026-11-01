@@ -19,6 +19,8 @@ export function tokenMatches(received: string, expected: string): boolean {
   return timingSafeEqual(a, b);
 }
 
+export const readToken = (header: string | undefined) => (header ?? "").trim().replace(/^bearer\s*:?\s*/i, "").trim();
+
 /**
  * Single entry point for everything captured on the phone:
  * Action Button (dream, note, expense, income) and the Wallet automation (apple_pay).
@@ -30,8 +32,9 @@ export const ingest = onRequest({ secrets: [INGEST_TOKEN], cors: false }, async 
     return;
   }
 
-  const header = req.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  // "Bearer <token>", tolerant of what is easy to get wrong when typing it in a
+  // Shortcut: the case of "Bearer", extra spaces, or the token alone.
+  const token = readToken(req.get("authorization"));
   if (!token || !tokenMatches(token, INGEST_TOKEN.value())) {
     res.status(401).json({ ok: false, error: "Jeton manquant ou invalide" });
     return;
