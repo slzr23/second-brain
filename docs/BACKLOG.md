@@ -13,14 +13,14 @@ Dernière mise à jour : 1er novembre 2026
 - [x] Déployer la version avec l'import Strava : `git pull` puis `firebase deploy --only hosting,firestore:rules` (les règles autorisent maintenant l'écriture des activités)
 - [x] Importer `strava-historique.json` (préparé par Claude via le connecteur Strava) avec + › Importer un fichier
 - [x] Chantier 1 : `OWNER_UID` dans `functions/.env.slzr-4701d`, jeton `INGEST_TOKEN`, `firebase deploy --only functions`, test `curl`
-- [ ] Chantier 1 : raccourci « Capture » sur l'Action Button et automatisation Apple Pay sur l'iPhone ([docs/action-button.md](action-button.md)), puis tester un rêve, une dépense et un vrai paiement Apple Pay
+- [x] Chantier 1 : raccourci « Capture » sur l'Action Button et automatisation Apple Pay sur l'iPhone ([docs/action-button.md](action-button.md)), puis tester un rêve, une dépense et un vrai paiement Apple Pay
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
 
 **Priorité : que les données arrivent toutes seules.** Tant qu'il faut importer à la main, l'app ne sert pas au quotidien ; le travail de Claude (tri, comptes rendus, synthèses) vient ensuite.
 
-**Chantier 1 : captures iPhone.** Le code est prêt (endpoint `ingest`, Action Button, automatisation Apple Pay) ; reste la configuration côté serveur et iPhone. Les paiements Apple Pay et les dépenses saisies sont fusionnés avec les lignes du relevé bancaire à l'import, pour ne jamais compter un paiement deux fois.
+**Chantier 1 : captures iPhone, terminé.** Rêve, note, dépense, entrée d'argent et eau depuis l'Action Button, paiements Apple Pay automatiques : tout arrive dans l'app. Reste à vérifier sur un vrai paiement Apple Pay, puis à changer le jeton (il est apparu sur une capture d'écran). Prochain chantier : la synchronisation bancaire.
 
 ## 📋 À venir, dans l'ordre
 
