@@ -17,11 +17,12 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { db } from "../lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../lib/firebase";
 import { DataContext } from "./context";
 import { mergeHistory } from "../import/history";
 import type { DaySnapshot } from "../lib/finance";
-import { accountHoldingId, trackerFor, type Activity, type DataSource, type DreamReport, type Entry, type HydrationDay, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
+import { accountHoldingId, trackerFor, type Activity, type BankStatus, type DataSource, type DreamReport, type Entry, type HydrationDay, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
 
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
@@ -78,6 +79,16 @@ const mapActivity = (id: string, d: DocumentData): Activity => ({
   report: d.report ?? null,
 });
 
+const mapBank = (d: DocumentData): BankStatus => ({
+  aspsp: d.aspsp ?? "",
+  validUntil: toDate(d.validUntil),
+  accounts: (d.accounts ?? []).map((a: { account: string }) => a.account),
+  lastSyncedAt: d.lastSyncedAt ? toDate(d.lastSyncedAt) : null,
+  added: d.lastResult?.added ?? null,
+  status: d.status ?? "active",
+  lastError: d.lastError ?? null,
+});
+
 const mapHydration = (id: string, d: DocumentData): HydrationDay => ({ day: d.day ?? id, ml: d.ml ?? 0 });
 
 const mapSnapshot = (_id: string, d: DocumentData): DaySnapshot => ({ day: d.day, byGroup: d.byGroup ?? {} });
@@ -120,6 +131,8 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
   const reports = useLiveCollection(uid, "dreamReports", "weekId", mapReport, 1);
   const holdings = useLiveCollection(uid, "holdings", "group", mapHolding);
   const [week, setWeek] = useState<WeekStats | null>(null);
+  const [bank, setBank] = useState<BankStatus | null>(null);
+  useEffect(() => onSnapshot(doc(db, "users", uid, "bank", "connection"), (snap) => setBank(snap.exists() ? mapBank(snap.data()) : null)), [uid]);
 
   useEffect(
     () =>
@@ -140,6 +153,15 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
       holdings: holdings ?? [],
       netWorthDays: netWorthDays ?? [],
       hydration: hydration ?? [],
+      bank,
+      async connectBank() {
+        const { data } = await httpsCallable<void, { url: string }>(functions, "bankConnect")();
+        window.location.href = data.url;
+      },
+      async syncBank() {
+        const { data } = await httpsCallable<void, { added: number }>(functions, "bankSyncNow")();
+        return data.added;
+      },
       async addEntry(kind, text) {
         await addDoc(collection(db, "users", uid, "entries"), {
           kind,
@@ -247,7 +269,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
         });
       },
     }),
-    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings, netWorthDays, hydration],
+    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings, netWorthDays, hydration, bank],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

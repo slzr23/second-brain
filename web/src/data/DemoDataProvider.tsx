@@ -28,6 +28,19 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       holdings,
       netWorthDays: [],
       hydration: demoHydration,
+      bank: {
+        aspsp: "Caisse d'Epargne",
+        validUntil: new Date(Date.now() + 160 * 86_400_000),
+        accounts: ["Compte courant", "Livret A"],
+        lastSyncedAt: new Date(Date.now() - 5 * 3_600_000),
+        added: 3,
+        status: "active",
+        lastError: null,
+      },
+      async connectBank() {},
+      async syncBank() {
+        return 0;
+      },
       async addEntry(kind, text) {
         const entry: Entry = { id: crypto.randomUUID(), kind, text, tags: [], createdAt: new Date() };
         setEntries((list) => [entry, ...list]);

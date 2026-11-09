@@ -29,7 +29,7 @@ Les stats de course sont dans Garmin et Strava, les rêves dans les notes du té
 | Pensées | Synthèse hebdomadaire des thèmes de mes rêves | 🚧 |
 | Finance | Import de l'historique bancaire et crypto, patrimoine et évolution par compte | ✅ |
 | Finance | Cours des actions et des cryptos à jour chaque soir | ✅ |
-| Finance | Synchronisation bancaire automatique | 🚧 |
+| Finance | Synchronisation bancaire automatique (Enable Banking) | 🚧 code prêt, [à configurer](docs/banque.md) |
 
 ## Architecture
 

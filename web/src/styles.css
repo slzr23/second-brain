@@ -415,6 +415,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .signin .primary { background: var(--label); color: var(--bg); display: flex; align-items: center; justify-content: center; gap: 8px; }
 .error { color: var(--red); font-size: 15px; text-align: center; }
 
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

@@ -3,6 +3,7 @@ import { CaretRight, Plus, WarningCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Donut } from "../../charts/Donut";
 import { BalanceSheet } from "../../components/BalanceSheet";
+import { BankLink } from "../../components/BankLink";
 import { HoldingSheet } from "../../components/HoldingSheet";
 import { ValueChart } from "../../components/ValueChart";
 import { useData } from "../../data/context";
@@ -127,6 +128,7 @@ export function Overview() {
         <div className="section-header">
           <h2>Comptes</h2>
         </div>
+        <BankLink />
         {withoutBalance.length > 0 && (
           <ul className="list" style={{ marginBottom: 12 }}>
             {withoutBalance.map((a) => (

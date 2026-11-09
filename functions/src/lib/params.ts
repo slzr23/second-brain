@@ -9,3 +9,12 @@ export const INGEST_TOKEN = defineSecret("INGEST_TOKEN");
  * functions/.env.<project-id> after the first sign-in, then redeploy.
  */
 export const OWNER_UID = defineString("OWNER_UID", { default: "" });
+
+/** Enable Banking application id (Control Panel), also the `kid` of every JWT. */
+export const ENABLE_BANKING_APP_ID = defineString("ENABLE_BANKING_APP_ID", { default: "" });
+/** Private key downloaded when the application was registered (<app-id>.pem). */
+export const ENABLE_BANKING_KEY = defineSecret("ENABLE_BANKING_KEY");
+/** Bank name exactly as GET /aspsps lists it, e.g. "Caisse d'Epargne Ile-de-France". */
+export const BANK_ASPSP = defineString("BANK_ASPSP", { default: "" });
+/** Where the app is served: the bank sends you back to {APP_URL}/api/bank/callback. */
+export const APP_URL = defineString("APP_URL", { default: "https://slzr-4701d.web.app" });

@@ -144,6 +144,20 @@ export interface HydrationDay {
   ml: number;
 }
 
+/** Nightly bank sync (Enable Banking), as the functions last left it. */
+export interface BankStatus {
+  /** Bank name as Enable Banking knows it. */
+  aspsp: string;
+  /** End of the consent: the bank must be reconnected before. */
+  validUntil: Date;
+  accounts: string[];
+  lastSyncedAt: Date | null;
+  /** Lines added by the last sync. */
+  added: number | null;
+  status: "active" | "expired" | "error";
+  lastError: string | null;
+}
+
 export const isRun = (a: Pick<Activity, "sport">) => ["Run", "TrailRun", "VirtualRun"].includes(a.sport);
 
 /** An activity read from an export, before it is stored. */
@@ -181,6 +195,12 @@ export interface DataSource {
   netWorthDays: DaySnapshot[];
   /** Water drunk per day (latest first), sent from the iPhone. */
   hydration: HydrationDay[];
+  /** Null until a bank is connected. */
+  bank: BankStatus | null;
+  /** Opens the bank's consent page (leaves the app, comes back on /#finance). */
+  connectBank(): Promise<void>;
+  /** Fetches the new bank lines now; returns how many were added. */
+  syncBank(): Promise<number>;
   addEntry(kind: EntryKind, text: string): Promise<void>;
   addTransaction(transaction: NewTransaction): Promise<void>;
   tagTransaction(id: string, necessity: Necessity): Promise<void>;
