@@ -58,6 +58,10 @@ Dans Raccourcis, onglet **Automatisation** :
 
 Ces paiements arrivent sans catégorie : tu les tries d'un geste dans l'onglet Finance.
 
+## Si un envoi est refusé
+
+Un jeton refusé laisse une ligne `ingest: token refused` dans les journaux (`firebase functions:log --only ingest`) avec le `type` envoyé, la présence de l'en-tête et la longueur du jeton reçu, jamais le jeton lui-même. Le plus sûr pour l'automatisation Apple Pay : appui long sur l'action **Obtenir le contenu de l'URL** de Capture › **Copier**, coller dans l'automatisation, puis changer seulement le corps.
+
 ## Ce que l'endpoint accepte
 
 ```jsonc

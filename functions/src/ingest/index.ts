@@ -36,6 +36,13 @@ export const ingest = onRequest({ secrets: [INGEST_TOKEN], cors: false }, async 
   // Shortcut: the case of "Bearer", extra spaces, or the token alone.
   const token = readToken(req.get("authorization"));
   if (!token || !tokenMatches(token, INGEST_TOKEN.value())) {
+    // Enough to tell which Shortcut is wrong and how, never the token itself.
+    logger.warn("ingest: token refused", {
+      type: typeof req.body?.type === "string" ? req.body.type.slice(0, 20) : null,
+      header: req.get("authorization") === undefined ? "missing" : "present",
+      length: token.length,
+      expectedLength: INGEST_TOKEN.value().trim().length,
+    });
     res.status(401).json({ ok: false, error: "Jeton manquant ou invalide" });
     return;
   }
