@@ -16,6 +16,8 @@ const SAVINGS = /\bLIVRET\b|CPT DEPOT PART|\bLDDS?\b|\bPEL\b|BITSTACK|BOURSORAMA
 const OWN_ACCOUNTS = /\bREVOLUT\b/;
 /** Paying friends back. */
 const FRIENDS = /\bWERO\b|\bLYDIA\b|\bPAYLIB\b/;
+/** A loan paid out ("BPCE FINANCEMENT"): borrowed money, not income. */
+const LOAN = /\bFINANCEMENT\b|\bDEBLOCAGE\b|\bDECAISSEMENT PRET\b/;
 
 /**
  * Spots money moving between your own accounts, which must not count as spending
@@ -27,6 +29,7 @@ export function detectTransfer(line: LineToClassify, ownerName: string | null): 
   const category = normalize(line.bankCategory ?? "");
   const type = normalize(line.operationType ?? "");
 
+  if (line.amountCents > 0 && LOAN.test(label)) return "internal";
   if (SAVINGS.test(label)) return "savings";
   if (category === "TRANSACTION EXCLUE") return "internal";
   if (OWN_ACCOUNTS.test(label) && !type.startsWith("FRAIS")) return "internal";
