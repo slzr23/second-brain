@@ -47,11 +47,17 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         setEntries((list) => [entry, ...list]);
       },
       async addTransaction({ amountCents, label, necessity }) {
-        const t: Transaction = { id: crypto.randomUUID(), amountCents, label, necessity, date: new Date(), merchant: null, source: "manual", account: null, transfer: null, bankCategory: null };
+        const t: Transaction = { id: crypto.randomUUID(), amountCents, label, necessity, date: new Date(), merchant: null, source: "manual", account: null, transfer: null, bankCategory: null, category: null, categorySource: null, suggestedNecessity: null };
         setTransactions((list) => [t, ...list]);
       },
       async tagTransaction(id, necessity) {
         setTransactions((list) => list.map((t) => (t.id === id ? { ...t, necessity } : t)));
+      },
+      async setCategory(id, category) {
+        setTransactions((list) => list.map((t) => (t.id === id ? { ...t, category, categorySource: "me" } : t)));
+      },
+      async classifyNow() {
+        return 0;
       },
       async saveHolding(id, { trackerSymbol, ...input }) {
         const next: Holding = {
@@ -80,7 +86,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
         return new Set(transactions.filter((t) => t.account === account).map((t) => t.id));
       },
       async importTransactions(items, onProgress, replaces = []) {
-        const added: Transaction[] = items.map((i) => ({ ...i, merchant: null, source: "bank" }));
+        const added: Transaction[] = items.map((i) => ({ ...i, merchant: null, source: "bank", category: null, categorySource: null, suggestedNecessity: null }));
         setTransactions((list) => [...list.filter((t) => !replaces.includes(t.id)), ...added].sort((a, b) => b.date.getTime() - a.date.getTime()));
         onProgress?.(items.length);
       },

@@ -20,6 +20,22 @@ export interface DreamReport {
   themes: { name: string; count: number }[];
 }
 
+/** Where the money went. Kept in step with functions/src/finance/categories.ts. */
+export const CATEGORIES = ["courses", "sorties", "transport", "logement", "abonnements", "sante", "shopping", "loisirs", "voyages", "autres"] as const;
+export type Category = (typeof CATEGORIES)[number];
+export const CATEGORY_LABEL: Record<Category, string> = {
+  courses: "Courses",
+  sorties: "Sorties",
+  transport: "Transport",
+  logement: "Logement et factures",
+  abonnements: "Abonnements",
+  sante: "Santé",
+  shopping: "Shopping",
+  loisirs: "Loisirs et sport",
+  voyages: "Voyages",
+  autres: "Autres",
+};
+
 export const NECESSITIES = ["essentiel", "social", "superflu"] as const;
 export type Necessity = (typeof NECESSITIES)[number];
 export const NECESSITY_LABEL: Record<Necessity, string> = {
@@ -42,6 +58,11 @@ export interface Transaction {
   /** Money moved between your own accounts: never counted as spending or income. */
   transfer: "savings" | "internal" | null;
   bankCategory: string | null;
+  /** Set by your own past choices, a keyword rule or Claude; "me" when you changed it. */
+  category: Category | null;
+  categorySource: "memory" | "rule" | "claude" | "me" | null;
+  /** Claude's (or your habit's) proposal, waiting for a swipe to become the necessity. */
+  suggestedNecessity: Necessity | null;
 }
 
 /** Spending and income ignore money that only moves between your own accounts. */
@@ -222,6 +243,10 @@ export interface DataSource {
   addEntry(kind: EntryKind, text: string): Promise<void>;
   addTransaction(transaction: NewTransaction): Promise<void>;
   tagTransaction(id: string, necessity: Necessity): Promise<void>;
+  /** Your own choice of category: it also becomes the rule for that merchant. */
+  setCategory(id: string, category: Category): Promise<void>;
+  /** Sorts every expense still unsorted (memory, rules, then Claude); returns how many lines got a proposal. */
+  classifyNow(): Promise<number>;
   /** Creates the holding when `id` is null. */
   saveHolding(id: string | null, input: HoldingInput): Promise<void>;
   /** First and last name of the account holder, used to spot transfers to yourself. */

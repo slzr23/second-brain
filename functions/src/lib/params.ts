@@ -24,3 +24,6 @@ export const ENABLE_BANKING_KEY = defineSecret("ENABLE_BANKING_KEY");
 export const BANK_ASPSP = defineString("BANK_ASPSP", { default: "" });
 /** Where the app is served: the bank sends you back to {APP_URL}/api/bank/callback. */
 export const APP_URL = defineString("APP_URL", { default: "https://slzr-4701d.web.app" });
+
+/** Claude API key (console.anthropic.com), for sorting expenses. */
+export const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");

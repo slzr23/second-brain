@@ -7,6 +7,7 @@ setGlobalOptions({ region: "europe-west1", maxInstances: 3 });
 export { ingest } from "./ingest";
 export { refreshPrices } from "./prices";
 export { bankCallback, bankConnect, bankSync, bankSyncNow } from "./bank";
+export { classifyNow } from "./finance";
 
 // Next steps of the MVP (see README > Roadmap):
 // export { stravaWebhook } from "./sport/stravaWebhook";

@@ -1,9 +1,7 @@
 import { ArrowDownLeft, ArrowsLeftRight, CaretRight } from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "motion/react";
 import { useState, type ReactNode } from "react";
-import { toast } from "sonner";
-import { useData } from "../../data/context";
-import { holdingValueCents, isDirectTracker, NECESSITIES, NECESSITY_LABEL, TRACKERS, type Holding, type Necessity, type Transaction } from "../../data/types";
+import { TransactionSheet } from "../../components/TransactionSheet";
+import { CATEGORY_LABEL, holdingValueCents, isDirectTracker, isSpending, NECESSITIES, NECESSITY_LABEL, TRACKERS, type Holding, type Transaction } from "../../data/types";
 import { formatEuros, formatShortDay, formatTime, groupByDay } from "../../lib/format";
 
 /* ------------------------------ Account colours ------------------------------ */
@@ -37,7 +35,7 @@ export function Amount({ cents, muted = false }: { cents: number; muted?: boolea
   );
 }
 
-/** "Social, 21:00" / "Épargne, Compte courant" */
+/** "Social · Sorties" / "À trier · Courses" / "Épargne, Compte courant" */
 export function describe(t: Transaction): string {
   const what = t.transfer
     ? t.transfer === "savings"
@@ -50,6 +48,7 @@ export function describe(t: Transaction): string {
         : isRecent(t)
           ? "À trier"
           : "Non classé";
+  if (t.category && isSpending(t)) return `${what} · ${CATEGORY_LABEL[t.category]}`;
   // Bank lines carry no time of day.
   return `${what}, ${t.source === "bank" ? (t.account ?? "Banque") : formatTime(t.date)}`;
 }
@@ -57,6 +56,7 @@ export function describe(t: Transaction): string {
 /** Movements grouped by day, with "show more". */
 export function Movements({ items, empty, initialCount = 10 }: { items: Transaction[]; empty: ReactNode; initialCount?: number }) {
   const [count, setCount] = useState(initialCount);
+  const [editing, setEditing] = useState<Transaction | null>(null);
   if (items.length === 0) return <div className="card">{empty}</div>;
   const shown = items.slice(0, count);
   return (
@@ -66,13 +66,28 @@ export function Movements({ items, empty, initialCount = 10 }: { items: Transact
           <h3 className="group-day">{group.day}</h3>
           <ul className="list">
             {group.items.map((t) => (
-              <li key={t.id} className="list-row">
-                <TxAvatar t={t} />
-                <div className="list-row-body">
-                  <p className="list-row-title">{t.label}</p>
-                  <p className="list-row-sub">{describe(t)}</p>
-                </div>
-                <Amount cents={t.amountCents} muted={!!t.transfer} />
+              <li key={t.id}>
+                {isSpending(t) ? (
+                  <button className="list-row link-row" onClick={() => setEditing(t)}>
+                    <TxAvatar t={t} />
+                    <span className="list-row-body">
+                      <span className="list-row-title" style={{ display: "block" }}>
+                        {t.label}
+                      </span>
+                      <span className="list-row-sub">{describe(t)}</span>
+                    </span>
+                    <Amount cents={t.amountCents} />
+                  </button>
+                ) : (
+                  <div className="list-row">
+                    <TxAvatar t={t} />
+                    <div className="list-row-body">
+                      <p className="list-row-title">{t.label}</p>
+                      <p className="list-row-sub">{describe(t)}</p>
+                    </div>
+                    <Amount cents={t.amountCents} muted={!!t.transfer} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -83,52 +98,8 @@ export function Movements({ items, empty, initialCount = 10 }: { items: Transact
           Voir plus
         </button>
       )}
+      <TransactionSheet transaction={editing} onOpenChange={(open) => !open && setEditing(null)} />
     </>
-  );
-}
-
-/** Recent expenses waiting to be sorted, one tap each. */
-export function ToSort({ items }: { items: Transaction[] }) {
-  const { tagTransaction } = useData();
-  const sort = (t: Transaction, n: Necessity) => {
-    tagTransaction(t.id, n);
-    toast(`${t.label} classé en ${NECESSITY_LABEL[n].toLowerCase()}`);
-  };
-
-  return (
-    <section className="section">
-      <div className="section-header">
-        <h2>À trier</h2>
-        <span className="secondary">Ça comptait vraiment ?</span>
-      </div>
-      <ul className="list">
-        <AnimatePresence initial={false}>
-          {items.map((t) => (
-            <motion.li
-              key={t.id}
-              className="list-row sort-row"
-              layout
-              exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0 }}
-              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-            >
-              <TxAvatar t={t} />
-              <div className="list-row-body">
-                <p className="list-row-title">{t.label}</p>
-                <p className="list-row-sub">{formatShortDay(t.date)}</p>
-              </div>
-              <Amount cents={t.amountCents} />
-              <div className="sort-actions">
-                {NECESSITIES.map((n) => (
-                  <button key={n} className={`tone-${n}`} onClick={() => sort(t, n)}>
-                    {NECESSITY_LABEL[n]}
-                  </button>
-                ))}
-              </div>
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
-    </section>
   );
 }
 

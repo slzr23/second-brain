@@ -3,7 +3,9 @@ import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { HttpsError, onCall, onRequest, type CallableRequest } from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import { onSchedule } from "firebase-functions/scheduler";
-import { APP_URL, BANK_ASPSP, ENABLE_BANKING_APP_ID, ENABLE_BANKING_KEY, OWNER_UID } from "../lib/params";
+import { claudeClient } from "../finance";
+import { classifyTransactions } from "../finance/classify";
+import { ANTHROPIC_API_KEY, APP_URL, BANK_ASPSP, ENABLE_BANKING_APP_ID, ENABLE_BANKING_KEY, OWNER_UID } from "../lib/params";
 import { EnableBanking } from "./client";
 import { accountName } from "./map";
 import { connectionRef, syncBank, type Connection } from "./sync";
@@ -115,9 +117,9 @@ export const bankCallback = onRequest({ secrets: [ENABLE_BANKING_KEY], cors: fal
   }
 });
 
-/** Every morning: yesterday's lines and the balances, before you open the app. */
+/** Every morning: yesterday's lines and the balances, then their categories, before you open the app. */
 export const bankSync = onSchedule(
-  { schedule: "15 6 * * *", timeZone: "Europe/Paris", retryCount: 1, secrets: [ENABLE_BANKING_KEY] },
+  { schedule: "15 6 * * *", timeZone: "Europe/Paris", retryCount: 1, secrets: [ENABLE_BANKING_KEY, ANTHROPIC_API_KEY], timeoutSeconds: 300 },
   async () => {
     const uid = OWNER_UID.value();
     if (!uid || !ENABLE_BANKING_APP_ID.value()) {
@@ -129,6 +131,12 @@ export const bankSync = onSchedule(
       return;
     }
     await syncBank(uid, client());
+    // Sorting must never fail the sync: the lines stay "à trier" and are tried again tomorrow.
+    try {
+      await classifyTransactions(uid, claudeClient());
+    } catch (error) {
+      logger.error("bankSync: classify failed", { error: (error as Error).message });
+    }
   },
 );
 

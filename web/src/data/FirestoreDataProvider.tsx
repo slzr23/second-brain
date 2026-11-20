@@ -62,6 +62,9 @@ const mapTransaction = (id: string, d: DocumentData): Transaction => ({
   account: d.account ?? null,
   transfer: d.transfer ?? null,
   bankCategory: d.bankCategory ?? null,
+  category: d.category ?? null,
+  categorySource: d.categorySource ?? null,
+  suggestedNecessity: d.suggestedNecessity ?? null,
 });
 
 const mapActivity = (id: string, d: DocumentData): Activity => ({
@@ -198,6 +201,13 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
       },
       async tagTransaction(id, necessity) {
         await updateDoc(doc(db, "users", uid, "transactions", id), { necessity });
+      },
+      async setCategory(id, category) {
+        await updateDoc(doc(db, "users", uid, "transactions", id), { category, categorySource: "me" });
+      },
+      async classifyNow() {
+        const { data } = await httpsCallable<void, { lines: number }>(functions, "classifyNow", { timeout: 540_000 })();
+        return data.lines;
       },
       async saveHolding(id, input) {
         // merge keeps fields the form does not edit, such as a bank account's history.

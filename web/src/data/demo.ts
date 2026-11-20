@@ -1,4 +1,4 @@
-import type { HealthDay, HydrationDay, Activity, DreamReport, Entry, Holding, Transaction, WeekStats } from "./types";
+import type { Category, HealthDay, HydrationDay, Necessity, Activity, DreamReport, Entry, Holding, Transaction, WeekStats } from "./types";
 import { isoWeekId } from "../lib/week";
 
 /** Fake but plausible data, so the app can be shown without any personal data. */
@@ -137,6 +137,20 @@ export const demoDreamReport: DreamReport = {
   ],
 };
 
+/** What the morning sorting would give the demo lines. */
+const DEMO_CATEGORY: [RegExp, Category][] = [
+  [/courses|boulangerie|march|carrefour|monoprix/i, "courses"],
+  [/bière|bar|resto|livraison|pizza|apéro|café/i, "sorties"],
+  [/navigo|sncf|uber|essence|train/i, "transport"],
+  [/loyer|électricité|edf|free|assurance|box/i, "logement"],
+  [/spotify|netflix|abonnement|icloud/i, "abonnements"],
+  [/pharmacie|médecin/i, "sante"],
+  [/chaussures|trail|piscine|salle|cinéma|course/i, "loisirs"],
+  [/vêtement|zara|amazon|livre/i, "shopping"],
+];
+const demoCategory = (label: string): Category => DEMO_CATEGORY.find(([re]) => re.test(label))?.[1] ?? "autres";
+const demoSuggestion = (category: Category): Necessity => (category === "sorties" ? "social" : ["shopping", "loisirs", "abonnements"].includes(category) ? "superflu" : "essentiel");
+
 let n = 0;
 const tx = (days: number, euros: number, label: string, necessity: Transaction["necessity"], source: Transaction["source"] = "manual", hour = 12): Transaction => ({
   id: `t${++n}`,
@@ -149,6 +163,9 @@ const tx = (days: number, euros: number, label: string, necessity: Transaction["
   account: source === "bank" ? "Compte courant" : null,
   transfer: null,
   bankCategory: null,
+  category: euros < 0 ? demoCategory(label) : null,
+  categorySource: euros < 0 ? "claude" : null,
+  suggestedNecessity: euros < 0 && !necessity ? demoSuggestion(demoCategory(label)) : null,
 });
 
 const recentTransactions: Transaction[] = [

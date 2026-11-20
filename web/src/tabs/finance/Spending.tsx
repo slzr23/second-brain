@@ -7,7 +7,8 @@ import { useData } from "../../data/context";
 import { isIncome, isSpending } from "../../data/types";
 import { averageCumulative, cumulative, dailySpending, paceVsAverage, spendingBuckets, type SpendUnit } from "../../lib/finance";
 import { formatEuros } from "../../lib/format";
-import { isRecent, Movements, Split, ToSort } from "./shared";
+import { SortDeck } from "../../components/SortDeck";
+import { Movements, Split } from "./shared";
 
 const UNITS = [
   { id: "week", label: "Semaines" },
@@ -30,7 +31,8 @@ export function Spending() {
   const incomeCents = thisMonth.filter(isIncome).reduce((sum, t) => sum + t.amountCents, 0);
   const pace = paceVsAverage(transactions, now);
   const spentByDay = cumulative(dailySpending(transactions, now.getFullYear(), now.getMonth()));
-  const toSort = transactions.filter((t) => isSpending(t) && t.necessity === null && isRecent(t));
+  // The whole history to sort, newest first (transactions come newest first).
+  const toSort = transactions.filter((t) => isSpending(t) && t.necessity === null);
   const [unit, setUnit] = useState<SpendUnit>("month");
   const buckets = spendingBuckets(transactions, unit, now);
 
@@ -73,7 +75,7 @@ export function Spending() {
         </div>
       </section>
 
-      {toSort.length > 0 && <ToSort items={toSort} />}
+      {toSort.length > 0 && <SortDeck items={toSort} />}
 
       <section className="section">
         <div className="section-header">
