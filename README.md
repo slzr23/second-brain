@@ -23,7 +23,7 @@ Les stats de course sont dans Garmin et Strava, les rêves dans les notes du té
 | Finance | Saisir une dépense depuis l'Action Button ou le bouton + de l'app | ✅ |
 | Finance | Import automatique des paiements Apple Pay | ✅ |
 | Finance | Trier chaque dépense : essentielle, sociale ou superflue | ✅ |
-| Sport | Nouvelles sorties Strava chaque soir (routine Claude), FC, allures et zones | 🚧 [à configurer](docs/sante.md) |
+| Sport | Nouvelles sorties Strava chaque soir (routine Claude), FC, allures et zones | ✅ |
 | Sport | Compte rendu de Claude après chaque sortie, ajustement des séances de Google Agenda | 🚧 |
 | Sport | Sommeil et FC au repos via Apple Santé | 🚧 [raccourci à créer](docs/sante.md) |
 | Pensées | Synthèse hebdomadaire des thèmes de mes rêves | 🚧 |

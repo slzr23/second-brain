@@ -7,7 +7,7 @@ Dernière mise à jour : 20 novembre 2026
 ## 🙋 À faire de mon côté
 
 - [ ] **Changer le jeton d'ingestion** (il est apparu sur une capture d'écran ; toujours la version du 25 octobre), puis le remplacer dans les raccourcis du dossier Capture et l'automatisation Apple Pay
-- [ ] **Autoriser `slzr-4701d.web.app` dans l'environnement cloud** (claude.ai › Code › Environnements › Default › Accès réseau) : sans ça, la routine Strava trouve les sorties mais ne peut pas les envoyer
+- [x] Autoriser `slzr-4701d.web.app` dans l'environnement cloud : la routine Strava envoie les sorties (testée le 20 novembre)
 - [ ] Créer le raccourci « Santé du matin » et son automatisation à 9 h ([docs/sante.md](sante.md)), vérifier que Garmin partage le sommeil et la FC au repos avec Santé
 - [ ] Supprimer les 3 lignes de test de Finance (« Test », « Test retour », « Mcdonald » à −1 €)
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
@@ -21,7 +21,7 @@ Dernière mise à jour : 20 novembre 2026
 **Où on en est :** les captures iPhone, Apple Pay et le compte courant arrivent tout seuls. Pour le sport et le sommeil, le code est déployé ([docs/sante.md](sante.md)) ; reste la configuration de mon côté.
 
 **Sport et sommeil.** Un raccourci ne sait pas lire les séances dans Apple Santé, d'où deux chemins :
-- **Séances** : routine Claude chaque soir à 21 h, qui lit les sorties via le connecteur Strava et les envoie avec un jeton limité aux activités. Les sorties du 31 octobre au 19 novembre ont été rattrapées à la main le 20 novembre. Bloqué tant que le domaine de l'app n'est pas autorisé dans l'environnement cloud.
+- **Séances** : routine Claude chaque soir à 21 h, qui lit les sorties via le connecteur Strava et les envoie avec un jeton limité aux activités. Les sorties du 31 octobre au 19 novembre ont été rattrapées à la main le 20 novembre.
 - **Sommeil et FC au repos** : raccourci « Santé du matin » à 9 h, carte Sommeil dans l'onglet Sport.
 
 ## 📋 À venir, dans l'ordre
