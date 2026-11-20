@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSleepLines, parseStage, summarizeNight, formatMinutes } from "../src/health/sleep";
+import { parseShortcutDate, parseSleepLines, parseStage, summarizeNight, formatMinutes } from "../src/health/sleep";
 import { parisTime, toActivityDoc } from "../src/sport/activities";
 import { ingestPayload } from "../src/ingest/schema";
 
@@ -39,6 +39,18 @@ describe("sleep from Apple Health", () => {
 
   it("falls back on time in bed without a watch", () => {
     expect(summarizeNight(parseSleepLines("2026-11-19T23:00:00+01:00|2026-11-20T07:00:00+01:00|Au lit"))!.asleepMin).toBe(480);
+  });
+
+  it("reads dates the iPhone did not format, as Paris time", () => {
+    expect(parseShortcutDate("19/11/2026 07:24").toISOString()).toBe("2026-11-19T06:24:00.000Z");
+    expect(parseShortcutDate("20 nov. 2026 à 01:00").toISOString()).toBe("2026-11-20T00:00:00.000Z");
+    expect(parseShortcutDate("3 mars 2026 à 23:10").toISOString()).toBe("2026-03-03T22:10:00.000Z");
+    expect(parseShortcutDate("12 mai 2026 à 06:05").toISOString()).toBe("2026-05-12T04:05:00.000Z");
+    expect(parseShortcutDate("4 juillet 2026 à 06:05").toISOString()).toBe("2026-07-04T04:05:00.000Z");
+    expect(parseShortcutDate("4 juin 2026 à 06:05").toISOString()).toBe("2026-06-04T04:05:00.000Z");
+    const [seg] = parseSleepLines("19/11/2026 07:24|19/11/2026 07:56|Core");
+    expect(seg).toMatchObject({ stage: "core" });
+    expect(summarizeNight([seg])!.asleepMin).toBe(32);
   });
 
   it("accepts the shortcut payload", () => {

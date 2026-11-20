@@ -1,4 +1,5 @@
 import { localDateKey } from "../lib/week";
+import { parisTime } from "../sport/activities";
 
 /** Sleep stages as Apple Health names them, whatever the language of the iPhone. */
 export type Stage = "inBed" | "awake" | "core" | "deep" | "rem" | "asleep";
@@ -37,10 +38,36 @@ export function parseStage(value: string): Stage | null {
   return null;
 }
 
+const MONTHS = ["janv", "fevr", "mars", "avr", "mai", "juin", "juil", "aout", "sept", "oct", "nov", "dec"];
+const pad = (n: string | number) => String(n).padStart(2, "0");
+
+/**
+ * A date as the Shortcut may send it: ISO 8601 ("2026-11-20T01:00:00+01:00"), or the
+ * iPhone's French display when the date was not formatted ("19/11/2026 07:24",
+ * "20 nov. 2026 à 01:00"), read as Paris time.
+ */
+export function parseShortcutDate(raw: string): Date {
+  const text = raw.trim();
+  const numeric = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\D+(\d{1,2})[:h](\d{2})(?::(\d{2}))?/.exec(text);
+  if (numeric) {
+    const [, d, m, y, hh, mm, ss = "00"] = numeric;
+    return parisTime(`${y}-${pad(m)}-${pad(d)}T${pad(hh)}:${mm}:${ss}`);
+  }
+  const named = /^(\d{1,2})\s+([a-zéû]+)\.?\s+(\d{4})\D+(\d{1,2})[:h](\d{2})(?::(\d{2}))?/i.exec(text);
+  if (named) {
+    const [, d, monthName, y, hh, mm, ss = "00"] = named;
+    const key = monthName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    // "nov", "novembre", "juil.", "fév." all point to one month.
+    const m = key.length >= 3 ? MONTHS.findIndex((name) => key.startsWith(name) || name.startsWith(key)) : -1;
+    if (m >= 0) return parisTime(`${y}-${pad(m + 1)}-${pad(d)}T${pad(hh)}:${mm}:${ss}`);
+  }
+  return new Date(text);
+}
+
 /**
  * One sample per line, "start|end|stage", dates in ISO 8601 as the Shortcut's
- * "Format Date" gives them. Unreadable lines are skipped, not fatal: one odd
- * sample must not lose the whole night.
+ * "Format Date" gives them, or as the iPhone displays them. Unreadable lines
+ * are skipped, not fatal: one odd sample must not lose the whole night.
  */
 export function parseSleepLines(input: string | string[]): SleepSegment[] {
   const lines = (Array.isArray(input) ? input : input.split(/\r?\n/)).flatMap((l) => l.split(/\r?\n/));
@@ -48,8 +75,8 @@ export function parseSleepLines(input: string | string[]): SleepSegment[] {
   for (const line of lines) {
     const [a, b, c] = line.split(/\s*[|;\t]\s*/);
     if (!a || !b || !c) continue;
-    const start = new Date(a.trim());
-    const end = new Date(b.trim());
+    const start = parseShortcutDate(a);
+    const end = parseShortcutDate(b);
     const stage = parseStage(c);
     if (!stage || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) continue;
     out.push({ start, end, stage });

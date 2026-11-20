@@ -87,6 +87,11 @@ export const ingest = onRequest({ secrets: [INGEST_TOKEN, SPORT_TOKEN], cors: fa
 
   if (payload.type === "health") {
     const night = payload.sleep ? summarizeNight(parseSleepLines(payload.sleep)) : null;
+    if (payload.sleep && !night) {
+      // Shows what the Shortcut really sent when no line could be read.
+      const raw = Array.isArray(payload.sleep) ? payload.sleep.slice(0, 3).join(" ⏎ ") : payload.sleep.slice(0, 300);
+      logger.warn("ingest: sleep unreadable", { isArray: Array.isArray(payload.sleep), length: payload.sleep.length, sample: raw });
+    }
     const hr = payload.restingHr === undefined ? null : Number(String(payload.restingHr).replace(",", ".").match(/\d+(\.\d+)?/)?.[0]);
     const restingHr = hr && hr > 25 && hr < 150 ? Math.round(hr) : null;
     if (!night && !restingHr) {
@@ -98,7 +103,8 @@ export const ingest = onRequest({ secrets: [INGEST_TOKEN, SPORT_TOKEN], cors: fa
       { day, ...(night ? { sleep: night } : {}), ...(restingHr ? { restingHr } : {}), updatedAt: FieldValue.serverTimestamp() },
       { merge: true },
     );
-    logger.info("ingest", { type: "health", day, sleep: !!night, restingHr: !!restingHr });
+    const lines = !payload.sleep ? 0 : Array.isArray(payload.sleep) ? payload.sleep.length : payload.sleep.split(/\r?\n/).filter(Boolean).length;
+    logger.info("ingest", { type: "health", day, sleep: !!night, sleepLines: lines, asleepMin: night?.asleepMin ?? null, restingHr: !!restingHr });
     const parts = [night ? `Nuit de ${formatMinutes(night.asleepMin)}` : null, restingHr ? `FC repos ${restingHr}` : null].filter(Boolean);
     res.status(201).json({ ok: true, id: day, message: parts.join(" · ") });
     return;

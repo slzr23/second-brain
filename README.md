@@ -25,7 +25,7 @@ Les stats de course sont dans Garmin et Strava, les rêves dans les notes du té
 | Finance | Trier chaque dépense : essentielle, sociale ou superflue | ✅ |
 | Sport | Nouvelles sorties Strava chaque soir (routine Claude), FC, allures et zones | ✅ |
 | Sport | Compte rendu de Claude après chaque sortie, ajustement des séances de Google Agenda | 🚧 |
-| Sport | Sommeil et FC au repos via Apple Santé | 🚧 [raccourci à créer](docs/sante.md) |
+| Sport | Sommeil et FC au repos via Apple Santé | ✅ |
 | Pensées | Synthèse hebdomadaire des thèmes de mes rêves | 🚧 |
 | Finance | Import de l'historique bancaire et crypto, patrimoine et évolution par compte | ✅ |
 | Finance | Cours des actions et des cryptos à jour chaque soir | ✅ |
