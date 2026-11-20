@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DataContext } from "./context";
-import { demoActivities, demoHydration, demoDreamReport, demoEntries, demoHoldings, demoTransactions, demoWeek } from "./demo";
+import { demoActivities, demoHealth, demoHydration, demoDreamReport, demoEntries, demoHoldings, demoTransactions, demoWeek } from "./demo";
 import { mergeHistory } from "../import/history";
 import { accountHoldingId, trackerFor, type DataSource, type Entry, type Holding, type Transaction } from "./types";
 
@@ -28,6 +28,7 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       holdings,
       netWorthDays: [],
       hydration: demoHydration,
+      health: demoHealth,
       bank: {
         aspsp: "Caisse d'Epargne",
         validUntil: new Date(Date.now() + 160 * 86_400_000),

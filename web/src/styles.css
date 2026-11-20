@@ -593,4 +593,11 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .water-week > span { justify-self: center; width: 100%; max-width: 28px; border-radius: 6px; background: var(--blue); opacity: 0.4; }
 .water-week > span.today { opacity: 1; }
 .water-goal { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--label-3); pointer-events: none; }
+.sleep-stages { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin: 14px 0 10px; }
+.sleep-stages span { min-width: 2px; }
+.sleep-legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; list-style: none; margin: 0 0 18px; padding: 0; font-size: 15px; }
+.sleep-legend li { display: flex; align-items: center; gap: 6px; }
+.sleep-legend i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.sleep-legend .num { margin-left: auto; }
+.sleep-week > span { background: var(--indigo); }
 .water-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 6px; text-align: center; font-size: 13px; color: var(--label-2); font-weight: 500; }

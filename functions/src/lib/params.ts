@@ -4,6 +4,12 @@ import { defineSecret, defineString } from "firebase-functions/params";
 export const INGEST_TOKEN = defineSecret("INGEST_TOKEN");
 
 /**
+ * Second token, for the morning Strava routine only: it can send activities and
+ * nothing else, so a leak never lets anyone write expenses or notes.
+ */
+export const SPORT_TOKEN = defineSecret("SPORT_TOKEN");
+
+/**
  * Firebase Auth uid of the owner: everything lands under users/{OWNER_UID}.
  * Empty on the very first deploy (nobody has signed in yet): set it in
  * functions/.env.<project-id> after the first sign-in, then redeploy.

@@ -22,7 +22,7 @@ import { db, functions } from "../lib/firebase";
 import { DataContext } from "./context";
 import { mergeHistory } from "../import/history";
 import type { DaySnapshot } from "../lib/finance";
-import { accountHoldingId, trackerFor, type Activity, type BankStatus, type DataSource, type DreamReport, type Entry, type HydrationDay, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
+import { accountHoldingId, trackerFor, type Activity, type BankStatus, type DataSource, type DreamReport, type Entry, type HealthDay, type HydrationDay, type Holding, type HoldingInput, type Transaction, type WeekStats } from "./types";
 
 const toDate = (value: unknown) => (value instanceof Timestamp ? value.toDate() : new Date());
 
@@ -89,6 +89,12 @@ const mapBank = (d: DocumentData): BankStatus => ({
   lastError: d.lastError ?? null,
 });
 
+const mapHealth = (id: string, d: DocumentData): HealthDay => ({
+  day: d.day ?? id,
+  sleep: d.sleep ? { ...d.sleep, start: toDate(d.sleep.start), end: toDate(d.sleep.end) } : null,
+  restingHr: d.restingHr ?? null,
+});
+
 const mapHydration = (id: string, d: DocumentData): HydrationDay => ({ day: d.day ?? id, ml: d.ml ?? 0 });
 
 const mapSnapshot = (_id: string, d: DocumentData): DaySnapshot => ({ day: d.day, byGroup: d.byGroup ?? {} });
@@ -126,6 +132,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
   const transactions = useLiveCollection(uid, "transactions", "date", mapTransaction, 0, 120);
   const netWorthDays = useLiveCollection(uid, "netWorth", "day", mapSnapshot, 400);
   const hydration = useLiveCollection(uid, "hydration", "day", mapHydration, 31);
+  const health = useLiveCollection(uid, "health", "day", mapHealth, 14);
   // The whole history (a few hundred documents): weekly averages and records need it.
   const activities = useLiveCollection(uid, "activities", "date", mapActivity, 1000);
   const reports = useLiveCollection(uid, "dreamReports", "weekId", mapReport, 1);
@@ -153,6 +160,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
       holdings: holdings ?? [],
       netWorthDays: netWorthDays ?? [],
       hydration: hydration ?? [],
+      health: health ?? [],
       bank,
       async connectBank() {
         const { data } = await httpsCallable<void, { url: string }>(functions, "bankConnect")();
@@ -269,7 +277,7 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
         });
       },
     }),
-    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings, netWorthDays, hydration, bank],
+    [uid, ownerName, weekId, entries, transactions, activities, reports, week, holdings, netWorthDays, hydration, health, bank],
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -23,13 +23,13 @@ Les stats de course sont dans Garmin et Strava, les rêves dans les notes du té
 | Finance | Saisir une dépense depuis l'Action Button ou le bouton + de l'app | ✅ |
 | Finance | Import automatique des paiements Apple Pay | ✅ |
 | Finance | Trier chaque dépense : essentielle, sociale ou superflue | ✅ |
-| Sport | Import des sorties Strava, FC, allures et zones | 🚧 |
+| Sport | Nouvelles sorties Strava chaque soir (routine Claude), FC, allures et zones | 🚧 [à configurer](docs/sante.md) |
 | Sport | Compte rendu de Claude après chaque sortie, ajustement des séances de Google Agenda | 🚧 |
-| Sport | Sommeil et FC au repos via Apple Santé | 🚧 |
+| Sport | Sommeil et FC au repos via Apple Santé | 🚧 [raccourci à créer](docs/sante.md) |
 | Pensées | Synthèse hebdomadaire des thèmes de mes rêves | 🚧 |
 | Finance | Import de l'historique bancaire et crypto, patrimoine et évolution par compte | ✅ |
 | Finance | Cours des actions et des cryptos à jour chaque soir | ✅ |
-| Finance | Synchronisation bancaire automatique (Enable Banking) | 🚧 code prêt, [à configurer](docs/banque.md) |
+| Finance | Synchronisation bancaire automatique (Enable Banking), [docs/banque.md](docs/banque.md) | ✅ |
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 import { parseAmountToCents } from "../lib/amount";
 import { formatVolume, parseVolumeMl } from "../lib/volume";
 import { isoWeekId, localDateKey } from "../lib/week";
-import type { IngestPayload } from "./schema";
+import type { CapturePayload } from "./schema";
 
 export type IngestRecord =
   | { collection: "entries"; data: EntryDoc; message: string }
@@ -41,7 +41,7 @@ const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR
 const dayToDate = (day: string | undefined, now: Date) => (day ? new Date(`${day}T12:00:00Z`) : now);
 
 /** Maps a validated Shortcut payload to the Firestore document it creates. Pure, so it is unit-tested. */
-export function buildRecord(payload: IngestPayload, now: Date): IngestRecord {
+export function buildRecord(payload: CapturePayload, now: Date): IngestRecord {
   switch (payload.type) {
     case "water": {
       const ml = parseVolumeMl(payload.amount);

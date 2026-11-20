@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildRecord, type IngestRecord } from "../src/ingest/build";
-import { ingestPayload } from "../src/ingest/schema";
+import { ingestPayload, type CapturePayload } from "../src/ingest/schema";
 
 const now = new Date("2026-10-23T20:45:00Z");
 /** Entries and transactions only: water goes to a daily total (see volume.test.ts). */
-const build = (body: unknown) => buildRecord(ingestPayload.parse(body), now) as Extract<IngestRecord, { data: unknown }>;
+const build = (body: unknown) => buildRecord(ingestPayload.parse(body) as CapturePayload, now) as Extract<IngestRecord, { data: unknown }>;
 
 describe("ingest payload → Firestore record", () => {
   it("stores a dream with normalized tags and its week", () => {

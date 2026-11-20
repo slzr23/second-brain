@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildRecord } from "../src/ingest/build";
-import { ingestPayload } from "../src/ingest/schema";
+import { ingestPayload, type CapturePayload } from "../src/ingest/schema";
 import { formatVolume, parseVolumeMl } from "../src/lib/volume";
 
 describe("water", () => {
@@ -16,7 +16,7 @@ describe("water", () => {
   });
 
   it("adds a drink to the day, in Paris time", () => {
-    const record = buildRecord(ingestPayload.parse({ type: "water", amount: "25 cl" }), new Date("2026-10-31T23:30:00Z"));
+    const record = buildRecord(ingestPayload.parse({ type: "water", amount: "25 cl" }) as CapturePayload, new Date("2026-10-31T23:30:00Z"));
     expect(record).toMatchObject({ collection: "hydration", day: "2026-11-01", drink: { ml: 250 }, message: "+250 ml" });
     expect(formatVolume(1250)).toBe("1,25 L");
   });

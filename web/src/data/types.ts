@@ -158,6 +158,22 @@ export interface BankStatus {
   lastError: string | null;
 }
 
+/** One morning from the Apple Health shortcut (users/{uid}/health/{day}). */
+export interface HealthDay {
+  /** "YYYY-MM-DD" of the morning you woke up, Paris time. */
+  day: string;
+  sleep: {
+    start: Date;
+    end: Date;
+    asleepMin: number;
+    deepMin: number;
+    remMin: number;
+    coreMin: number;
+    awakeMin: number;
+  } | null;
+  restingHr: number | null;
+}
+
 export const isRun = (a: Pick<Activity, "sport">) => ["Run", "TrailRun", "VirtualRun"].includes(a.sport);
 
 /** An activity read from an export, before it is stored. */
@@ -195,6 +211,8 @@ export interface DataSource {
   netWorthDays: DaySnapshot[];
   /** Water drunk per day (latest first), sent from the iPhone. */
   hydration: HydrationDay[];
+  /** Nights and resting heart rate, latest first. */
+  health: HealthDay[];
   /** Null until a bank is connected. */
   bank: BankStatus | null;
   /** Opens the bank's consent page (leaves the app, comes back on /#finance). */

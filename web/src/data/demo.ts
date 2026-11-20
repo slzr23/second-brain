@@ -1,4 +1,4 @@
-import type { HydrationDay, Activity, DreamReport, Entry, Holding, Transaction, WeekStats } from "./types";
+import type { HealthDay, HydrationDay, Activity, DreamReport, Entry, Holding, Transaction, WeekStats } from "./types";
 import { isoWeekId } from "../lib/week";
 
 /** Fake but plausible data, so the app can be shown without any personal data. */
@@ -240,4 +240,14 @@ export const demoHoldings: Holding[] = [
 ];
 
 const dayKeyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+export const demoHealth: HealthDay[] = [430, 395, 462, 371, 448, 410, 502].map((asleepMin, i) => {
+  const end = daysAgo(i);
+  end.setHours(7, 10, 0, 0);
+  return {
+    day: dayKeyOf(end),
+    sleep: { start: new Date(end.getTime() - (asleepMin + 25) * 60_000), end, asleepMin, deepMin: Math.round(asleepMin * 0.16), remMin: Math.round(asleepMin * 0.22), coreMin: Math.round(asleepMin * 0.62), awakeMin: 15 },
+    restingHr: [52, 54, 51, 55, 53, 52, 50][i],
+  };
+});
+
 export const demoHydration: HydrationDay[] = [1250, 1900, 2200, 1500, 2050, 1700, 2400, 1600].map((ml, i) => ({ day: dayKeyOf(daysAgo(i)), ml }));

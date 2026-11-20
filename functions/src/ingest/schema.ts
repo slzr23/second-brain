@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { stravaActivity } from "../sport/activities";
 
 /** Tags arrive either as a JSON array or as "rêve lucide, travail" from a Shortcut. */
 const tags = z
@@ -38,6 +39,16 @@ export const ingestPayload = z.discriminatedUnion("type", [
   z.object({ type: z.literal("apple_pay"), amount, merchant: label, card: optionalText }),
   // A drink: "25 cl", "0,5 L", 250 (ml).
   z.object({ type: z.literal("water"), amount }),
+  // Morning Apple Health shortcut: last night's sleep samples ("start|end|stage" lines) and resting heart rate.
+  z.object({
+    type: z.literal("health"),
+    sleep: z.union([z.string().max(50_000), z.array(z.string().max(500)).max(500)]).optional(),
+    restingHr: z.union([z.number(), z.string().max(40)]).optional(),
+  }),
+  // New Strava activities, sent by the morning routine (same format as the history import).
+  z.object({ type: z.literal("activities"), activities: z.array(stravaActivity).max(200) }),
 ]);
 
 export type IngestPayload = z.infer<typeof ingestPayload>;
+/** What the Action Button and Apple Pay send: one document each. */
+export type CapturePayload = Exclude<IngestPayload, { type: "health" | "activities" }>;
