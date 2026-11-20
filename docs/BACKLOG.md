@@ -7,6 +7,8 @@ Dernière mise à jour : 20 novembre 2026
 ## 🙋 À faire de mon côté
 
 - [ ] **Changer le jeton d'ingestion** (il est apparu sur une capture d'écran ; toujours la version du 25 octobre), puis le remplacer dans les raccourcis du dossier Capture et l'automatisation Apple Pay
+- [ ] **Autoriser `slzr-4701d.web.app` dans l'environnement cloud** (claude.ai › Code › Environnements › Default › Accès réseau) : sans ça, la routine Strava trouve les sorties mais ne peut pas les envoyer
+- [ ] Créer le raccourci « Santé du matin » et son automatisation à 9 h ([docs/sante.md](sante.md)), vérifier que Garmin partage le sommeil et la FC au repos avec Santé
 - [ ] Supprimer les 3 lignes de test de Finance (« Test », « Test retour », « Mcdonald » à −1 €)
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
 - [ ] Rappel mensuel sur l'iPhone : solde du Livret A, parts du PEE, réimport Bitstack et Revolut
@@ -16,9 +18,11 @@ Dernière mise à jour : 20 novembre 2026
 
 **Priorité : que les données arrivent toutes seules.** Tant qu'il faut importer à la main, l'app ne sert pas au quotidien ; le travail de Claude (tri, comptes rendus, synthèses) vient ensuite.
 
-**Où on en est :** les captures iPhone, Apple Pay et le compte courant arrivent tout seuls. Il manque le sport et le sommeil : la dernière activité en base date du 28 octobre.
+**Où on en est :** les captures iPhone, Apple Pay et le compte courant arrivent tout seuls. Pour le sport et le sommeil, le code est déployé ([docs/sante.md](sante.md)) ; reste la configuration de mon côté.
 
-**Sport et sommeil : un raccourci Apple Santé chaque matin** : séances de la veille (Garmin les écrit dans Santé), FC, sommeil et, si disponible, FC au repos. Remplace le blocage de l'API Strava. Vérifier d'abord ce que Garmin Connect partage (Santé › Partage › Garmin Connect). Le sommeil s'affiche dans l'app dès que Garmin est relié.
+**Sport et sommeil.** Un raccourci ne sait pas lire les séances dans Apple Santé, d'où deux chemins :
+- **Séances** : routine Claude chaque soir à 21 h, qui lit les sorties via le connecteur Strava et les envoie avec un jeton limité aux activités. Les sorties du 31 octobre au 19 novembre ont été rattrapées à la main le 20 novembre. Bloqué tant que le domaine de l'app n'est pas autorisé dans l'environnement cloud.
+- **Sommeil et FC au repos** : raccourci « Santé du matin » à 9 h, carte Sommeil dans l'onglet Sport.
 
 ## 📋 À venir, dans l'ordre
 
@@ -65,7 +69,7 @@ Dernière mise à jour : 20 novembre 2026
 
 ## 🧱 Bloqué ou à décider
 
-- **Nouvelles sorties après l'import Strava** : l'accord d'API Strava interdit d'envoyer les données à une IA, et le programme développeur Garmin est fermé. Piste retenue : Apple Santé (en cours).
+- **Webhook Strava** (une sortie dans l'app dès qu'elle est sur Strava) : une application sur l'API Strava est soumise à un accord qui interdit de transmettre les données à une IA. Piste : un webhook qui ne transmet que l'identifiant et déclenche la routine, qui lit la sortie via le connecteur officiel.
 - **Livret A hors synchro** : la Caisse d'Épargne n'a partagé que le compte courant (l'accès DSP2 ne couvre en principe que les comptes de paiement). Son solde se met à jour à la main ; les virements depuis le compte courant sont bien reconnus comme épargne.
 - **PEE Amundi** : pas d'API. Les fonds suivent le cours de l'action Airbus, mais leurs parts doivent être mises à jour à la main de temps en temps.
 - **Historique du PEE** : il n'est connu que depuis sa saisie, donc les graphiques reportent sa valeur actuelle dans le passé. Un export des opérations Amundi (versements, abondements) permettrait de reconstruire la vraie courbe.
