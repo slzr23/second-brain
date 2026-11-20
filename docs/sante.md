@@ -17,12 +17,15 @@ Les deux arrivent par l'endpoint `ingest`, comme les captures.
 Dans Raccourcis, nouveau raccourci **Santé du matin** :
 
 1. **Rechercher des échantillons de santé** : Type *Analyse du sommeil*, Date de début *dans les derniers 1 jours*, trier par *Date de début*, ordre *Le plus ancien en premier*.
-2. **Répéter avec chaque** élément de *Échantillons de santé* :
-   - **Formater la date** : *Date de début* de l'*Élément répété*, format **ISO 8601**, avec l'heure.
-   - **Formater la date** : *Date de fin* de l'*Élément répété*, format **ISO 8601**, avec l'heure.
-   - **Texte** : `<date de début formatée>|<date de fin formatée>|<Valeur de l'élément répété>`
-     La valeur est la phase : « Profond », « Paradoxal », « Essentiel », « Éveillé(e) », « Au lit »… en français ou en anglais.
-3. **Combiner le texte** : *Résultats de la répétition*, avec *Nouvelle ligne*.
+2. **La boucle sur chaque morceau de la nuit.** Santé découpe la nuit en morceaux (une phase « Profond » de 23 h 40 à 0 h 15, puis « Essentiel »…). On transforme chaque morceau en une ligne de texte.
+   1. Tape dans la barre de recherche en bas, cherche **Répéter avec chaque** et ajoute-la. Si son champ bleu n'affiche pas déjà *Échantillons de santé*, touche-le et choisis-le. L'action crée deux blocs, **Répéter avec chaque** et **Fin de la répétition** : les actions suivantes vont **entre les deux**. Fais-les glisser là si besoin.
+   2. Ajoute **Formater la date**. Touche son champ bleu *Date* › **Élément répété**. Touche ensuite le jeton *Élément répété* que tu viens de mettre : un menu s'ouvre, choisis **Date de début**. Ouvre les options de l'action (touche la flèche ou « Afficher plus ») : **Format de la date** = **ISO 8601**, puis active **Inclure l'heure**.
+   3. Juste en dessous, ajoute **Définir une variable**, nomme-la `Debut`. Elle reçoit la *Date formatée*.
+   4. Ajoute encore **Formater la date**, réglée de la même façon, mais avec **Date de fin**. Puis **Définir une variable** `Fin`.
+   5. Ajoute **Texte**. Dans la case, touche **Variables** au-dessus du clavier et compose : `Debut` `|` `Fin` `|` *Élément répété*. Touche ensuite ce jeton *Élément répété* et choisis **Valeur**, c'est la phase de sommeil. Pour taper `|` : clavier **123** › **#+=**.
+      Une ligne donne par exemple : `2026-11-20T01:00:00+01:00|2026-11-20T02:00:00+01:00|Profond`.
+   6. Vérifie que **Texte** est la dernière action avant **Fin de la répétition** : c'est elle qui alimente *Résultats de la répétition*.
+3. **Après** *Fin de la répétition*, ajoute **Combiner le texte** : entrée *Résultats de la répétition*, séparateur **Nouvelle ligne**. Toutes les lignes de la nuit ne font plus qu'un texte.
 4. **Rechercher des échantillons de santé** : Type *Fréquence cardiaque au repos*, trier par *Date de début*, *Le plus récent en premier*, **limite 1**. Puis **Obtenir les détails des échantillons de santé** : *Valeur*.
 5. **Obtenir le contenu de l'URL** : `https://slzr-4701d.web.app/api/ingest`, méthode `POST`, en-tête `Authorization` = `Bearer <jeton>` (le même que Capture), corps JSON :
    - `type` (texte) = `health`
