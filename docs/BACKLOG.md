@@ -13,6 +13,7 @@ Dernière mise à jour : 20 novembre 2026
 - [ ] Supprimer les 3 lignes de test de Finance (« Test », « Test retour », « Mcdonald » à −1 €)
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
 - [ ] Rappel mensuel sur l'iPhone : solde du Livret A, parts du PEE, réimport Bitstack et Revolut
+- [ ] Installer le mini PC à la maison (Ubuntu Server, Tailscale, Docker), avant de décider de l'IA locale (voir « Bloqué ou à décider »)
 - [ ] Activer GitHub Pages pour la démo : Settings › Pages › Source : « GitHub Actions » (plus tard)
 
 ## 🚧 En cours
@@ -70,6 +71,13 @@ Dernière mise à jour : 20 novembre 2026
 
 ## 🧱 Bloqué ou à décider
 
+- **IA souveraine sur mon serveur maison** *(piste à l'étude, 20 novembre)*. Un mini PC HP (i5, 8 Go de RAM, SSD de 1 To) tourne chez moi, joignable via Tailscale. Idée : y faire tourner un petit modèle local (Olala mini d'OVHcloud, 7 milliards de paramètres dont 1 milliard actif, prévu pour tourner sur un processeur sans GPU) pour que mes rêves et mes dépenses ne partent plus chez un fournisseur d'IA. Ce n'est pas une question de coût : avec Haiku et des résumés déjà calculés, Claude coûte quelques centimes par mois. Approche proposée, à valider :
+  - **Un seul point d'appel à l'IA** dans `functions/` (interface `Llm`), avec deux branchements interchangeables : l'API Claude et une API compatible OpenAI (llama.cpp ou Ollama sur le mini PC). Le modèle choisi se règle par tâche, pas dans le code de chaque fonction.
+  - **Le serveur va chercher le travail, Firebase ne l'appelle pas.** Les fonctions écrivent une tâche dans une collection `aiJobs` ; un petit service sur le mini PC la lit, appelle le modèle local et écrit le résultat. Rien n'est ouvert sur ma box, et si le serveur est éteint, les tâches attendent son retour.
+  - **Par tâche** : le local pour la synthèse des rêves (la donnée la plus intime) et le tri des dépenses (de l'étiquetage simple) ; Claude, ou bien le local, pour les comptes rendus de sortie et les ajustements de séances, selon la qualité obtenue.
+  - **Garde-fous** : la réponse du modèle local passe par le même schéma Zod qu'aujourd'hui (sortie contrainte par grammaire JSON côté llama.cpp). Si le serveur n'a rien traité depuis 48 h, Claude prend le relais pour le tri, mais jamais pour les rêves.
+  - **Limites à garder en tête** : un modèle de cette taille sur 8 Go de RAM est lent (le tri de l'historique se fait la nuit, pas en direct) et moins fin que Claude sur les libellés bancaires tronqués ; les données restent de toute façon dans Firestore, chez Google : la souveraineté porte ici sur l'IA, pas sur le stockage.
+  - **Premier test** : tri des ~870 dépenses de l'historique en local, puis comparaison avec Haiku sur un échantillon que j'ai déjà trié moi-même.
 - **Webhook Strava** (une sortie dans l'app dès qu'elle est sur Strava) : une application sur l'API Strava est soumise à un accord qui interdit de transmettre les données à une IA. Piste : un webhook qui ne transmet que l'identifiant et déclenche la routine, qui lit la sortie via le connecteur officiel.
 - **Livret A hors synchro** : la Caisse d'Épargne n'a partagé que le compte courant (l'accès DSP2 ne couvre en principe que les comptes de paiement). Son solde se met à jour à la main ; les virements depuis le compte courant sont bien reconnus comme épargne.
 - **PEE Amundi** : pas d'API. Les fonds suivent le cours de l'action Airbus, mais leurs parts doivent être mises à jour à la main de temps en temps.
