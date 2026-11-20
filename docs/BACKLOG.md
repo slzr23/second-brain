@@ -9,7 +9,8 @@ Dernière mise à jour : 20 novembre 2026
 - [ ] **Changer le jeton d'ingestion** (il est apparu sur une capture d'écran ; toujours la version du 25 octobre), puis le remplacer dans les raccourcis du dossier Capture et l'automatisation Apple Pay
 - [x] Autoriser `slzr-4701d.web.app` dans l'environnement cloud : la routine Strava envoie les sorties (testée le 20 novembre)
 - [x] Raccourci « Santé du matin » : nuit et FC au repos arrivent (testé le 20 novembre)
-- [ ] Créer son automatisation à 9 h ([docs/sante.md](sante.md)) ; surveiller le sommeil profond, à 0 sur la première nuit reçue
+- [x] Automatisation « Santé du matin » à 9 h
+- [ ] Surveiller le sommeil profond : à 0 sur la première nuit reçue (Garmin le transmet-il à Santé ?)
 - [ ] Supprimer les 3 lignes de test de Finance (« Test », « Test retour », « Mcdonald » à −1 €)
 - [ ] Comparer chaque compte de l'app avec l'appli de la banque ou de la plateforme, noter les écarts
 - [ ] Rappel mensuel sur l'iPhone : solde du Livret A, parts du PEE, réimport Bitstack et Revolut
