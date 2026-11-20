@@ -6,7 +6,6 @@ Dernière mise à jour : 20 novembre 2026
 
 ## 🙋 À faire de mon côté
 
-- [ ] **Changer le jeton d'ingestion** (il est apparu sur une capture d'écran ; toujours la version du 25 octobre), puis le remplacer dans les raccourcis du dossier Capture et l'automatisation Apple Pay
 - [x] Autoriser `slzr-4701d.web.app` dans l'environnement cloud : la routine Strava envoie les sorties (testée le 20 novembre)
 - [x] Raccourci « Santé du matin » : nuit et FC au repos arrivent (testé le 20 novembre)
 - [x] Automatisation « Santé du matin » à 9 h
