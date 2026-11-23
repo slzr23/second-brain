@@ -2,7 +2,7 @@
 
 Où en est le projet. Mis à jour à chaque livraison : ce qui est fait, ce qui attend une action de ma part, ce qui vient ensuite.
 
-Dernière mise à jour : 20 novembre 2026
+Dernière mise à jour : 23 novembre 2026
 
 ## 🙋 À faire de mon côté
 
@@ -29,30 +29,21 @@ Dernière mise à jour : 20 novembre 2026
 
 1. **Finance : catégories automatiques et tri par Claude.** *Code prêt le 20 novembre (fonction `classifyNow`, tri après la synchro du matin, cartes à glisser, catégorie modifiable d'un geste) ; en attente de la clé API Anthropic (`firebase functions:secrets:set ANTHROPIC_API_KEY`) pour être déployé.* Chaque dépense reçoit une catégorie déduite du marchand ou du libellé (Courses, Sorties, Transport, Logement et factures, Abonnements, Santé, Shopping, Loisirs et sport, Voyages, Autres), corrigeable d'un geste. Claude propose aussi la nécessité (essentiel, social, superflu) ; l'historique (~870) se trie carte par carte en glissant (inspiré du *Swipe deck* de bencho.dev). Urgent : la synchro bancaire n'a pas les catégories de la banque, 30 dépenses sur 47 de novembre sont à trier.
 
-2. **Finance : séparer Patrimoine et Compte courant.** Le compte courant monte à chaque salaire et redescend avec les dépenses : mélangé au patrimoine, il rend la courbe illisible alors que le patrimoine, lui, bouge peu. L'onglet Finance devient deux parties :
-   - **Patrimoine** : l'épargne et les placements seulement (Livret A, PEE, crypto), avec sa courbe d'évolution et sa répartition. Le compte courant n'y est plus, et pas de total « tout compris ».
-   - **Compte courant** :
-     - courbe du solde ;
-     - mois calé sur le salaire : un « mois » va du 27 au 26 du mois suivant, donc salaire et loyer dans le même mois, aides du 5 au milieu ;
-     - argent gagné du mois, détaillé (salaire, aides, remboursements…), et comparé au mois précédent ;
-     - dépenses du mois par catégorie (combien en courses, en sorties…), et comparées au mois précédent ;
-     - les dépenses à trier.
+2. **Sport : n'afficher que les 3 dernières activités**, avec un lien vers l'historique complet.
 
-3. **Sport : n'afficher que les 3 dernières activités**, avec un lien vers l'historique complet.
-
-4. **Pensées : catégories de notes et envies d'achat.**
+3. **Pensées : catégories de notes et envies d'achat.**
    - Types de notes, choisis depuis l'Action Button : *Idée*, *À faire*, *Réflexion* (note de fond) et *Envie d'achat*. *Proposition, à valider.*
    - Une envie d'achat précise son genre (livre, vêtement, tech, autre) et un prix, si connu. Elle rejoint une liste dans Finance, où Claude dit si c'est raisonnable maintenant compte tenu du budget du mois, ou s'il vaut mieux attendre.
 
-5. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
+4. **Sport : compte rendu de Claude après chaque sortie**, et propositions d'ajustement des séances suivantes dans Google Agenda (stockées dans `proposals`, appliquées seulement si je valide).
 
-6. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
+5. **Pensées : synthèse hebdomadaire des rêves** (thèmes de la semaine).
 
-7. **Sport : le tableau de bord** : allures, zones cardiaques, tendances.
+6. **Sport : le tableau de bord** : allures, zones cardiaques, tendances.
 
-8. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée.
+7. **UI : confirmation façon Dynamic Island** (inspirée de bencho.dev) quand une capture arrive ou qu'une dépense est enregistrée.
 
-9. **Sport : FC de tout l'historique** (l'import la contient depuis août 2026), si les tendances sur plusieurs années deviennent utiles.
+8. **Sport : FC de tout l'historique** (l'import la contient depuis août 2026), si les tendances sur plusieurs années deviennent utiles.
 
 ### Plus tard
 
@@ -84,6 +75,16 @@ Dernière mise à jour : 20 novembre 2026
 - [ ] Mettre à jour les captures d'écran du README avec la nouvelle partie Finance
 
 ## ✅ Fait
+
+**Finance : Compte courant et Patrimoine séparés** (23 novembre, inspiré de Personal Finance de Claude)
+- Deux parties : *Compte courant* (le quotidien) et *Patrimoine* (épargne et placements seulement, sans le compte courant ni total « tout compris »)
+- Mois calé sur le jour où le salaire arrive vraiment (le 27 par défaut), reconnu même sans le mot « salaire » dans le libellé
+- « Il te reste avant la paie » : solde moins les prélèvements attendus d'ici la paie
+- Ce mois-ci : gagné, dépensé, mis de côté, comparés au mois dernier, avec la moyenne et la capacité d'épargne
+- « Où est passé ton salaire » : dépenses par catégorie, moyenne et écart au mois dernier ; un appui ouvre la catégorie
+- « À surveiller » : découvert prévu, frais bancaires sur 12 mois (nets des remises), paiements en double, abonnements en hausse
+- « Chaque mois » : les dépenses récurrentes repérées seules, avec leur coût annuel
+- Argent gagné par type (salaire, aides, virements reçus) comparé au mois dernier
 
 **Socle**
 - PWA React installable sur l'écran d'accueil de l'iPhone, connexion Google, données rangées sous mon seul compte

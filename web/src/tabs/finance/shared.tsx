@@ -2,7 +2,26 @@ import { ArrowDownLeft, ArrowsLeftRight, CaretRight } from "@phosphor-icons/reac
 import { useState, type ReactNode } from "react";
 import { TransactionSheet } from "../../components/TransactionSheet";
 import { CATEGORY_LABEL, holdingValueCents, isDirectTracker, isSpending, NECESSITIES, NECESSITY_LABEL, TRACKERS, type Holding, type Transaction } from "../../data/types";
+import { Segmented } from "../../components/Segmented";
 import { formatEuros, formatShortDay, formatTime, groupByDay } from "../../lib/format";
+import { useRoute } from "../../lib/route";
+
+/* ------------------------------- The two parts ------------------------------- */
+
+const PARTS = [
+  { id: "courant", label: "Compte courant" },
+  { id: "patrimoine", label: "Patrimoine" },
+] as const;
+
+/** Day-to-day money and savings are two different stories: one switch between them. */
+export function FinanceSwitch({ value }: { value: (typeof PARTS)[number]["id"] }) {
+  const { navigate } = useRoute();
+  return (
+    <div className="finance-switch">
+      <Segmented id="finance-part" label="Partie" options={PARTS} value={value} onChange={(v) => navigate({ tab: "finance", path: v === "courant" ? [] : ["patrimoine"] })} />
+    </div>
+  );
+}
 
 /* ------------------------------ Account colours ------------------------------ */
 

@@ -1,22 +1,23 @@
 import NumberFlow from "@number-flow/react";
-import { CaretRight, Plus, WarningCircle } from "@phosphor-icons/react";
+import { Plus, WarningCircle } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Donut } from "../../charts/Donut";
 import { BalanceSheet } from "../../components/BalanceSheet";
-import { BankLink } from "../../components/BankLink";
 import { HoldingSheet } from "../../components/HoldingSheet";
 import { ValueChart } from "../../components/ValueChart";
 import { useData } from "../../data/context";
-import { isSpending } from "../../data/types";
-import { accountGroups, netWorthSeries, paceVsAverage } from "../../lib/finance";
+import { CURRENT_ACCOUNT } from "../../lib/budget";
+import { accountGroups, netWorthSeries } from "../../lib/finance";
 import { formatEuros } from "../../lib/format";
 import { useRoute } from "../../lib/route";
-import { Gain, groupColor, isRecent, LinkRow } from "./shared";
+import { FinanceSwitch, Gain, groupColor, LinkRow } from "./shared";
 
 
-/** Finance home: total wealth and where it sits, then a door to each account and to spending. */
+/** Patrimoine: savings and investments (not the current account), where they sit, how they evolve. */
 export function Overview() {
-  const { holdings, transactions } = useData();
+  const { holdings: all, transactions } = useData();
+  // Savings and investments only: the current account has its own part.
+  const holdings = all.filter((h) => h.group !== CURRENT_ACCOUNT);
   const { navigate } = useRoute();
   // Accounts shown on the evolution chart; empty means all of them.
   const [shown, setShown] = useState<string[]>([]);
@@ -29,20 +30,17 @@ export function Overview() {
   const colors = Object.fromEntries(groups.map((g, i) => [g.name, groupColor(i)]));
   const open = (name: string) => navigate({ tab: "finance", path: ["compte", name] });
 
-  const now = new Date();
-  const month = new Intl.DateTimeFormat("fr-FR", { month: "long" }).format(now);
-  const pace = paceVsAverage(transactions, now);
-  const toSort = transactions.filter((t) => isSpending(t) && !t.necessity && isRecent(t)).length;
   // Bank accounts whose movements were imported but whose balance is still unknown.
   const withoutBalance = [...new Set(transactions.filter((t) => t.source === "bank" && t.account).map((t) => t.account!))].filter(
-    (a) => !groups.some((g) => g.name === a),
+    (a) => a !== CURRENT_ACCOUNT && !groups.some((g) => g.name === a),
   );
 
   return (
     <>
-      <section className="section" style={{ marginTop: 12 }}>
+      <FinanceSwitch value="patrimoine" />
+      <section className="section">
         <div className="card">
-          <p className="card-title">Patrimoine total</p>
+          <p className="card-title">Épargne et placements</p>
           <p className="hero-value">
             <NumberFlow value={total / 100} locales="fr-FR" format={{ style: "currency", currency: "EUR" }} />
           </p>
@@ -105,30 +103,8 @@ export function Overview() {
 
       <section className="section">
         <div className="section-header">
-          <h2>Dépenses</h2>
-        </div>
-        <button className="card preview-card" onClick={() => navigate({ tab: "finance", path: ["depenses"] })}>
-          <span className="preview-body">
-            <span className="card-title">En {month}</span>
-            <span className="preview-value num">{formatEuros(pace.spent)}</span>
-            {pace.pct !== null && (
-              <span className={`pace ${pace.pct > 0 ? "more" : "less"}`}>
-                {pace.pct === 0
-                  ? "Comme d'habitude à cette date"
-                  : `${Math.abs(pace.pct)} % ${pace.pct > 0 ? "de plus" : "de moins"} que d'habitude à cette date`}
-              </span>
-            )}
-            {toSort > 0 && <span className="pill tone-social">{toSort} à trier</span>}
-          </span>
-          <CaretRight size={18} weight="bold" className="chevron" aria-hidden />
-        </button>
-      </section>
-
-      <section className="section">
-        <div className="section-header">
           <h2>Comptes</h2>
         </div>
-        <BankLink />
         {withoutBalance.length > 0 && (
           <ul className="list" style={{ marginBottom: 12 }}>
             {withoutBalance.map((a) => (

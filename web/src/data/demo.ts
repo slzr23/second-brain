@@ -143,9 +143,9 @@ const DEMO_CATEGORY: [RegExp, Category][] = [
   [/bière|bar|resto|livraison|pizza|apéro|café/i, "sorties"],
   [/navigo|sncf|uber|essence|train/i, "transport"],
   [/loyer|électricité|edf|free|assurance|box/i, "logement"],
-  [/spotify|netflix|abonnement|icloud/i, "abonnements"],
+  [/spotify|netflix|abonnement|icloud|forfait|téléphone/i, "abonnements"],
   [/pharmacie|médecin/i, "sante"],
-  [/chaussures|trail|piscine|salle|cinéma|course/i, "loisirs"],
+  [/chaussures|trail|piscine|salle|cinéma|décathlon/i, "loisirs"],
   [/vêtement|zara|amazon|livre/i, "shopping"],
 ];
 const demoCategory = (label: string): Category => DEMO_CATEGORY.find(([re]) => re.test(label))?.[1] ?? "autres";
@@ -168,26 +168,6 @@ const tx = (days: number, euros: number, label: string, necessity: Transaction["
   suggestedNecessity: euros < 0 && !necessity ? demoSuggestion(demoCategory(label)) : null,
 });
 
-const recentTransactions: Transaction[] = [
-  tx(0, -4.2, "Boulangerie", null, "apple_pay", 8),
-  tx(1, -18.5, "Bières avec les potes", "social", "manual", 21),
-  tx(2, -63.42, "Courses de la semaine", "essentiel", "manual", 19),
-  tx(3, -13.99, "Livraison repas", "superflu", "apple_pay", 13),
-  tx(4, -35, "Resto d'anniversaire", "social", "manual", 20),
-  tx(5, -84.9, "Chaussures de trail", null, "apple_pay", 18),
-  tx(6, 920, "Salaire", null, "manual", 9),
-  tx(7, -9.99, "Forfait téléphone", "essentiel", "bank", 8),
-  tx(9, -48.1, "Courses", "essentiel", "apple_pay", 18),
-  tx(10, -11.5, "Cinéma", "social", "apple_pay", 20),
-  tx(12, -10.99, "Abonnement musique", "superflu", "bank", 7),
-  tx(14, -7.6, "Pharmacie", "essentiel", "apple_pay", 17),
-  tx(15, -22, "Brunch", "social", "apple_pay", 12),
-  tx(17, -51.3, "Courses", "essentiel", "apple_pay", 18),
-  tx(19, -39.99, "Vêtements", "superflu", "apple_pay", 15),
-  tx(21, -88.8, "Pass Navigo", "essentiel", "bank", 9),
-  tx(22, -620, "Loyer", "essentiel", "bank", 9),
-];
-
 /** Deterministic pseudo-random numbers, so the demo looks the same on every load. */
 function seeded(seed: number) {
   return () => {
@@ -196,29 +176,51 @@ function seeded(seed: number) {
   };
 }
 
-/** Five earlier months of plausible spending, for the comparisons and the bars. */
-function pastMonths(): Transaction[] {
+/**
+ * Seven months of a plausible current account, on a real rhythm: salary on the
+ * 27th, rent right after, an allowance on the 5th, subscriptions on fixed days
+ * (one of them going up), groceries and outings in between. The last week is
+ * left to sort, and the month in progress holds one double charge to spot.
+ */
+function demoMonths(): Transaction[] {
   const rand = seeded(42);
   const list: Transaction[] = [];
-  const today = new Date();
-  for (let m = 1; m <= 5; m++) {
-    const first = new Date(today.getFullYear(), today.getMonth() - m, 1);
-    const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-    const at = (day: number, euros: number, label: string, necessity: Transaction["necessity"]) => {
-      const date = new Date(first.getFullYear(), first.getMonth(), day, 12);
-      list.push({ ...tx(0, euros, label, necessity, "bank"), date });
-    };
-    at(2, -620, "Loyer", "essentiel");
-    at(3, -88.8, "Pass Navigo", "essentiel");
-    at(5, 920, "Salaire", null);
-    for (let d = 4; d <= days; d += 3) at(d, -(25 + rand() * 45), "Courses", "essentiel");
-    for (let d = 6; d <= days; d += 5) at(d, -(12 + rand() * 30), rand() > 0.5 ? "Bar" : "Resto", "social");
-    for (let d = 9; d <= days; d += 9) at(d, -(8 + rand() * 40), "Achat en ligne", "superflu");
+  const now = new Date();
+  const at = (month: Date, day: number, euros: number, label: string, necessity: Transaction["necessity"], extra: Partial<Transaction> = {}) => {
+    const date = new Date(month.getFullYear(), month.getMonth(), day, 9 + Math.floor(rand() * 11));
+    if (date > now || day > new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate()) return;
+    const fresh = now.getTime() - date.getTime() < 7 * 86_400_000;
+    const t = { ...tx(0, euros, label, fresh && euros < 0 ? null : necessity, extra.source ?? "bank"), date, ...extra };
+    if (t.source !== "bank") t.account = null;
+    list.push(t);
+  };
+
+  for (let m = 6; m >= 0; m--) {
+    const month = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    at(month, 1, -88.8, "Pass Navigo", "essentiel");
+    at(month, 5, 182, "CAF aide au logement", null);
+    at(month, 8, -9.99, "Forfait téléphone", "essentiel");
+    at(month, 12, m <= 1 ? -11.99 : -10.99, "Abonnement musique", "superflu");
+    at(month, 15, -29.9, "Salle de sport", "superflu");
+    at(month, 16, -4.2, "Cotisation compte bancaire", "essentiel", { category: "autres" });
+    at(month, 20, -100, "Virement vers Livret A", null, { transfer: "savings", category: null, suggestedNecessity: null });
+    at(month, 27, 1180, "Salaire", null);
+    at(month, 28, -620, "Loyer", "essentiel");
+    for (let d = 2; d <= days; d += 4) at(month, d, -(15 + rand() * 32), rand() > 0.3 ? "Courses" : "Boulangerie", "essentiel", { source: rand() > 0.5 ? "apple_pay" : "bank" });
+    for (let d = 4; d <= days; d += 6) at(month, d, -(8 + rand() * 24), ["Bar avec les potes", "Resto", "Cinéma", "Livraison repas"][Math.floor(rand() * 4)], "social", { source: "apple_pay" });
+    for (let d = 9; d <= days; d += 12) at(month, d, -(12 + rand() * 35), rand() > 0.5 ? "Vêtements" : "Livre", "superflu");
+    if (m === 3) at(month, 22, -8, "Commission d'intervention", null, { category: "autres", necessity: "superflu" });
+    if (m === 3) at(month, 23, -8, "Commission d'intervention", null, { category: "autres", necessity: "superflu" });
+    if (m % 2 === 0) at(month, 18, 15, "Virement de Tom (resto)", null);
   }
+  // Charged twice in the month in progress?
+  const d1 = new Date(now.getTime() - 3 * 86_400_000);
+  list.push({ ...tx(3, -42, "Décathlon", null, "bank"), date: d1 }, { ...tx(2, -42, "Décathlon", null, "bank"), date: new Date(d1.getTime() + 86_400_000) });
   return list;
 }
 
-export const demoTransactions: Transaction[] = [...recentTransactions, ...pastMonths()].sort((a, b) => b.date.getTime() - a.date.getTime());
+export const demoTransactions: Transaction[] = demoMonths().sort((a, b) => b.date.getTime() - a.date.getTime());
 
 const holding = (id: string, group: string, name: string, units: number, unitPrice: number, days: number, symbol: string | null = null): Holding => ({
   id,

@@ -638,3 +638,26 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .tx-sheet-sub { font-size: 15px; margin: -6px 0 6px; text-align: center; }
 .tx-sheet-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--label-2); margin: 18px 4px 8px; }
 .sheet .sort-actions { margin-bottom: 8px; }
+
+/* ---------- Finance: Compte courant ---------- */
+.finance-switch { margin: 12px 0 16px; }
+.hero-value.negative { color: var(--red); }
+.flow { list-style: none; margin: 4px 0 0; padding: 0; }
+.flow li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 0; font-size: 17px; }
+.flow li + li { border-top: 0.5px solid var(--separator); }
+.flow-value { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.flow-value b { font-size: 20px; font-weight: 600; }
+.change { font-size: 13px; color: var(--label-2); }
+.change.good, .list-row-sub .good { color: var(--green); }
+.change.bad, .list-row-sub .bad { color: var(--red); }
+.cat-row .list-row-body { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+.cat-row .list-row-body > .cat-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.cat-head .num { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cat-row .list-row-body > .cat-bar { display: block; height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.cat-bar span { display: block; height: 100%; border-radius: 3px; background: var(--red); }
+.cat-bar span.untagged { background: var(--gray); }
+.alert-row { align-items: flex-start; }
+.alert-row .list-row-sub { display: block; line-height: 1.35; margin-top: 2px; }
+.section-header .link { font-size: 15px; color: var(--accent); }
+.alert-row .list-row-title { white-space: normal; overflow: visible; }
+.cat-head .list-row-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
