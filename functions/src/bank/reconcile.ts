@@ -45,16 +45,16 @@ export function alreadyImported(lines: BankLine[], stored: StoredLine[]): Set<st
 }
 
 /**
- * Same rule as the CSV import (web/src/import/reconcile.ts): an Apple Pay payment or
- * a typed expense with the same amount, booked from the day before to 5 days after,
+ * Same rule as the CSV import (web/src/import/reconcile.ts): an Apple Pay payment, or
+ * a line typed in the app (an expense or money received), with the same amount, booked from the day before to 5 days after,
  * the closest in time. Returns bank line id → app entry.
  */
 export function matchAppEntries(lines: BankLine[], stored: StoredLine[]): Map<string, StoredLine> {
-  const candidates = stored.filter((t) => (t.source === "apple_pay" || t.source === "manual") && !t.account && t.amountCents < 0);
+  const candidates = stored.filter((t) => (t.source === "apple_pay" || t.source === "manual") && !t.account && t.amountCents !== 0);
   const used = new Set<string>();
   const matches = new Map<string, StoredLine>();
   for (const line of [...lines].sort((a, b) => a.date.getTime() - b.date.getTime())) {
-    if (line.transfer || line.amountCents >= 0) continue;
+    if (line.transfer) continue;
     let best: StoredLine | null = null;
     let bestGap = Infinity;
     for (const t of candidates) {

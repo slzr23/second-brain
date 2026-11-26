@@ -159,6 +159,12 @@ describe("merging with what is already stored", () => {
     expect(mergeAppEntry(line(), pay)).toMatchObject({ label: "Courses", necessity: "essentiel", amountCents: -1250 });
   });
 
+  it("takes over money received that I typed before the bank showed it", () => {
+    const typed = stored({ id: "m", source: "manual", amountCents: 1_000_000, label: "Don des parents", date: new Date("2026-11-03T12:00:00Z") });
+    const matches = matchAppEntries([line({ amountCents: 1_000_000, label: "M Ou Mme Dupont" })], [typed]);
+    expect(matches.get("eb_1")?.id).toBe("m");
+  });
+
   it("never merges a transfer or a payment booked too late", () => {
     const pay = stored({ id: "ap", date: new Date("2026-10-20T12:00:00Z") });
     expect(matchAppEntries([line()], [pay]).size).toBe(0);

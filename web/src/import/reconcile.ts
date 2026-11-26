@@ -4,19 +4,19 @@ import type { ImportedTransaction } from "./types";
 const DAY = 86_400_000;
 
 /**
- * Finds, for bank lines, the same spending already entered in the app: an Apple
- * Pay payment caught by the Wallet automation, or an expense typed with the
- * Action Button. Same amount, and the bank books it from the day before (time
+ * Finds, for bank lines, the same movement already entered in the app: an Apple
+ * Pay payment caught by the Wallet automation, or an expense (or money received)
+ * typed in the app. Same amount, and the bank books it from the day before (time
  * zones) to 5 days after. Each app entry matches one bank line at most, the
  * closest in time.
  */
 export function matchAppEntries(bankItems: ImportedTransaction[], transactions: Transaction[]): Map<string, Transaction> {
-  const candidates = transactions.filter((t) => (t.source === "apple_pay" || t.source === "manual") && !t.account && t.amountCents < 0);
+  const candidates = transactions.filter((t) => (t.source === "apple_pay" || t.source === "manual") && !t.account && t.amountCents !== 0);
   const used = new Set<string>();
   const matches = new Map<string, Transaction>();
 
   for (const item of [...bankItems].sort((a, b) => a.date.getTime() - b.date.getTime())) {
-    if (item.transfer || item.amountCents >= 0) continue;
+    if (item.transfer) continue;
     let best: Transaction | null = null;
     let bestGap = Infinity;
     for (const t of candidates) {

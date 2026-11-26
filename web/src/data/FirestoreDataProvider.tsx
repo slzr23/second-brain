@@ -209,6 +209,9 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
       async setOneOff(id, oneOff) {
         await updateDoc(doc(db, "users", uid, "transactions", id), { oneOff });
       },
+      async deleteTransaction(id) {
+        await deleteDoc(doc(db, "users", uid, "transactions", id));
+      },
       async classifyNow() {
         const { data } = await httpsCallable<void, { lines: number }>(functions, "classifyNow", { timeout: 540_000 })();
         return data.lines;

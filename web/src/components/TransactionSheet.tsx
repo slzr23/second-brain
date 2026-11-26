@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { useData } from "../data/context";
@@ -12,7 +13,21 @@ import { formatEuros, formatShortDay } from "../lib/format";
  * one-off purchase.
  */
 export function TransactionSheet({ transaction: t, onOpenChange }: { transaction: Transaction | null; onOpenChange: (open: boolean) => void }) {
-  const { setCategory, tagTransaction, setOneOff, transactions } = useData();
+  const { setCategory, tagTransaction, setOneOff, deleteTransaction, transactions } = useData();
+  // Deleting takes two taps: the first one asks.
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => setConfirming(false), [t?.id]);
+  const remove = async () => {
+    if (!live) return;
+    if (!confirming) return setConfirming(true);
+    try {
+      await deleteTransaction(live.id);
+      onOpenChange(false);
+      toast.success("Mouvement supprimé");
+    } catch (error) {
+      toast.error(`Non supprimé : ${(error as Error).message}`);
+    }
+  };
   // Follow the live line, so a change shows at once.
   const live = t ? (transactions.find((x) => x.id === t.id) ?? t) : null;
 
@@ -112,6 +127,11 @@ export function TransactionSheet({ transaction: t, onOpenChange }: { transaction
                   {!live.necessity && live.suggestedNecessity && <p className="hint">Proposé : {NECESSITY_LABEL[live.suggestedNecessity].toLowerCase()}.</p>}
                 </>
               )}
+
+              <button className="danger" style={{ marginTop: 20 }} onClick={remove}>
+                {confirming ? "Confirmer la suppression" : "Supprimer ce mouvement"}
+              </button>
+              {confirming && live.source === "bank" && <p className="hint">Ligne venue de la banque : si elle date de moins de 10 jours, la prochaine synchro peut la remettre.</p>}
             </>
           )}
         </Drawer.Content>

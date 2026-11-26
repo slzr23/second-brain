@@ -59,6 +59,9 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       async setOneOff(id, oneOff) {
         setTransactions((list) => list.map((t) => (t.id === id ? { ...t, oneOff } : t)));
       },
+      async deleteTransaction(id) {
+        setTransactions((list) => list.filter((t) => t.id !== id));
+      },
       async classifyNow() {
         return 0;
       },

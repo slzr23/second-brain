@@ -252,6 +252,8 @@ export interface DataSource {
   setCategory(id: string, category: Category): Promise<void>;
   /** In or out of the monthly budget; null gives the choice back to the app. */
   setOneOff(id: string, oneOff: boolean | null): Promise<void>;
+  /** Removes a movement for good: a duplicate, a test line… */
+  deleteTransaction(id: string): Promise<void>;
   /** Sorts every expense still unsorted (memory, rules, then Claude); returns how many lines got a proposal. */
   classifyNow(): Promise<number>;
   /** Creates the holding when `id` is null. */
