@@ -5,6 +5,8 @@ import { CATEGORY_LABEL, holdingValueCents, isDirectTracker, isSpending, NECESSI
 import { Segmented } from "../../components/Segmented";
 import { formatEuros, formatShortDay, formatTime, groupByDay } from "../../lib/format";
 import { useRoute } from "../../lib/route";
+import { useData } from "../../data/context";
+import { oneOffTest } from "../../lib/budget";
 
 /* ------------------------------- The two parts ------------------------------- */
 
@@ -18,7 +20,18 @@ export function FinanceSwitch({ value }: { value: (typeof PARTS)[number]["id"] }
   const { navigate } = useRoute();
   return (
     <div className="finance-switch">
-      <Segmented id="finance-part" label="Partie" options={PARTS} value={value} onChange={(v) => navigate({ tab: "finance", path: v === "courant" ? [] : ["patrimoine"] })} />
+      <Segmented
+        id="finance-part"
+        label="Partie"
+        options={PARTS}
+        value={value}
+        onChange={(v) =>
+          navigate({
+            tab: "finance",
+            path: v === "courant" ? [] : ["patrimoine"],
+          })
+        }
+      />
     </div>
   );
 }
@@ -55,18 +68,20 @@ export function Amount({ cents, muted = false }: { cents: number; muted?: boolea
 }
 
 /** "Social · Sorties" / "À trier · Courses" / "Épargne, Compte courant" */
-export function describe(t: Transaction): string {
-  const what = t.transfer
-    ? t.transfer === "savings"
-      ? "Épargne"
-      : "Entre tes comptes"
-    : t.amountCents > 0
-      ? "Entrée d'argent"
-      : t.necessity
-        ? NECESSITY_LABEL[t.necessity]
-        : isRecent(t)
-          ? "À trier"
-          : "Non classé";
+export function describe(t: Transaction, oneOff = false): string {
+  const what = oneOff
+    ? "Hors budget"
+    : t.transfer
+      ? t.transfer === "savings"
+        ? "Épargne"
+        : "Entre tes comptes"
+      : t.amountCents > 0
+        ? "Entrée d'argent"
+        : t.necessity
+          ? NECESSITY_LABEL[t.necessity]
+          : isRecent(t)
+            ? "À trier"
+            : "Non classé";
   if (t.category && isSpending(t)) return `${what} · ${CATEGORY_LABEL[t.category]}`;
   // Bank lines carry no time of day.
   return `${what}, ${t.source === "bank" ? (t.account ?? "Banque") : formatTime(t.date)}`;
@@ -76,6 +91,7 @@ export function describe(t: Transaction): string {
 export function Movements({ items, empty, initialCount = 10 }: { items: Transaction[]; empty: ReactNode; initialCount?: number }) {
   const [count, setCount] = useState(initialCount);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const isOneOff = oneOffTest(useData().transactions);
   if (items.length === 0) return <div className="card">{empty}</div>;
   const shown = items.slice(0, count);
   return (
@@ -86,27 +102,16 @@ export function Movements({ items, empty, initialCount = 10 }: { items: Transact
           <ul className="list">
             {group.items.map((t) => (
               <li key={t.id}>
-                {isSpending(t) ? (
-                  <button className="list-row link-row" onClick={() => setEditing(t)}>
-                    <TxAvatar t={t} />
-                    <span className="list-row-body">
-                      <span className="list-row-title" style={{ display: "block" }}>
-                        {t.label}
-                      </span>
-                      <span className="list-row-sub">{describe(t)}</span>
+                <button className="list-row link-row" onClick={() => setEditing(t)}>
+                  <TxAvatar t={t} />
+                  <span className="list-row-body">
+                    <span className="list-row-title" style={{ display: "block" }}>
+                      {t.label}
                     </span>
-                    <Amount cents={t.amountCents} />
-                  </button>
-                ) : (
-                  <div className="list-row">
-                    <TxAvatar t={t} />
-                    <div className="list-row-body">
-                      <p className="list-row-title">{t.label}</p>
-                      <p className="list-row-sub">{describe(t)}</p>
-                    </div>
-                    <Amount cents={t.amountCents} muted={!!t.transfer} />
-                  </div>
-                )}
+                    <span className="list-row-sub">{describe(t, isOneOff(t))}</span>
+                  </span>
+                  <Amount cents={t.amountCents} muted={!!t.transfer || isOneOff(t)} />
+                </button>
               </li>
             ))}
           </ul>

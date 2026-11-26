@@ -26,7 +26,10 @@ import { useRoute } from "../../lib/route";
 import { FinanceSwitch, Movements } from "./shared";
 
 const categoryName = (k: CategoryKey) => (k === "none" ? "À classer" : CATEGORY_LABEL[k]);
-const dayFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+const dayFmt = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+});
 
 /** "+12 % vs le mois dernier", coloured by whether that is good news. */
 function Change({ pct, goodWhenUp }: { pct: number | null; goodWhenUp: boolean }) {
@@ -41,7 +44,12 @@ function Change({ pct, goodWhenUp }: { pct: number | null; goodWhenUp: boolean }
   );
 }
 
-const ALERT_ICON: Record<Alert["kind"], typeof Warning> = { overdraft: Warning, fees: Receipt, duplicate: Copy, rising: TrendUp };
+const ALERT_ICON: Record<Alert["kind"], typeof Warning> = {
+  overdraft: Warning,
+  fees: Receipt,
+  duplicate: Copy,
+  rising: TrendUp,
+};
 
 /**
  * The current account, one question per block: how much is left until payday,
@@ -67,6 +75,7 @@ export function Current() {
   const biggest = categories[0]?.[1] ?? 1;
   const account = holdings.filter((h) => h.group === CURRENT_ACCOUNT);
   const capacity = usual.earnedCents - usual.spentCents;
+  const oneOffLines = summaries.flatMap((s) => s.oneOff).sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return (
     <>
@@ -80,8 +89,8 @@ export function Current() {
           <p className="secondary" style={{ fontSize: 15 }}>
             {run.leftCents === null
               ? "Relie ta banque plus bas pour voir ce qu'il te reste."
-              : run.upcomingCents > 0
-                ? `Solde ${formatEuros(run.balanceCents!)}, moins ${formatEuros(run.upcomingCents)} de prélèvements prévus. Paie dans ${run.daysToPayday} jour${run.daysToPayday > 1 ? "s" : ""}.`
+              : run.upcomingCents > 0 || run.oneOffCents > 0
+                ? `Solde ${formatEuros(run.balanceCents!)}${run.upcomingCents > 0 ? `, moins ${formatEuros(run.upcomingCents)} de prélèvements prévus` : ""}${run.oneOffCents > 0 ? `, sans les ${formatEuros(run.oneOffCents)} hors budget (prêt, don…) encore sur le compte` : ""}. Paie dans ${run.daysToPayday} jour${run.daysToPayday > 1 ? "s" : ""}.`
                 : `Solde du compte, aucun prélèvement prévu d'ici là. Paie dans ${run.daysToPayday} jour${run.daysToPayday > 1 ? "s" : ""}.`}
           </p>
         </div>
@@ -103,11 +112,25 @@ export function Current() {
                 <Change pct={changePct(current.spentCents, previous.spentCents)} goodWhenUp={false} />
               </span>
             </li>
-            {current.savedCents !== 0 && (
+            {(current.savedCents !== 0 || current.savedOneOffCents > 0) && (
               <li>
                 <span>Mis de côté</span>
                 <span className="flow-value">
                   <b className="num">{formatEuros(current.savedCents)}</b>
+                  {current.savedOneOffCents > 0 && <span className="change">sur ta paie, sans les {formatEuros(current.savedOneOffCents)} hors budget placés</span>}
+                </span>
+              </li>
+            )}
+            {(current.oneOffInCents > 0 || current.oneOffOutCents > 0) && (
+              <li>
+                <span>Hors budget</span>
+                <span className="flow-value">
+                  <b className="num secondary">
+                    {current.oneOffInCents > 0 ? `+${formatEuros(current.oneOffInCents)}` : ""}
+                    {current.oneOffInCents > 0 && current.oneOffOutCents > 0 ? " · " : ""}
+                    {current.oneOffOutCents > 0 ? `−${formatEuros(current.oneOffOutCents)}` : ""}
+                  </b>
+                  <span className="change">prêt, don… compté à part</span>
                 </span>
               </li>
             )}
@@ -139,7 +162,12 @@ export function Current() {
                         <span className="num">{formatEuros(cents)}</span>
                       </span>
                       <span className="cat-bar" aria-hidden>
-                        <span className={key === "none" ? "untagged" : undefined} style={{ width: `${Math.max(2, (cents / biggest) * 100)}%` }} />
+                        <span
+                          className={key === "none" ? "untagged" : undefined}
+                          style={{
+                            width: `${Math.max(2, (cents / biggest) * 100)}%`,
+                          }}
+                        />
                       </span>
                       <span className="list-row-sub">
                         {avg ? `${formatEuros(Math.round(avg))} en moyenne` : "Nouveau ce mois-ci"}
@@ -207,7 +235,8 @@ export function Current() {
                     {r.label}
                   </span>
                   <span className="list-row-sub">
-                    Le {r.day} · {formatEuros(r.yearlyCents)} par an{r.necessity === "superflu" ? " · superflu" : ""}
+                    Le {r.day} · {formatEuros(r.yearlyCents)} par an
+                    {r.necessity === "superflu" ? " · superflu" : ""}
                   </span>
                 </span>
                 <span className="value-stack">
@@ -242,13 +271,36 @@ export function Current() {
         </section>
       )}
 
+      {oneOffLines.length > 0 && (
+        <section className="section">
+          <div className="section-header">
+            <h2>Hors budget</h2>
+          </div>
+          <Movements items={oneOffLines} empty={null} initialCount={5} />
+          <p className="hint">
+            Un prêt, un don, une grosse rentrée ou un achat ponctuel : ni dans tes revenus, ni dans tes dépenses, ni dans tes moyennes. Appuie sur une ligne pour la remettre dans
+            le budget, ou sur n'importe quel mouvement pour l'en sortir.
+          </p>
+        </section>
+      )}
+
       {account.some((h) => h.history.length > 1) && (
         <section className="section">
           <div className="section-header">
             <h2>Solde du compte</h2>
           </div>
           <div className="card">
-            <ValueChart id="current" holdings={account} series={[{ key: CURRENT_ACCOUNT, label: CURRENT_ACCOUNT, color: "var(--blue)" }]} />
+            <ValueChart
+              id="current"
+              holdings={account}
+              series={[
+                {
+                  key: CURRENT_ACCOUNT,
+                  label: CURRENT_ACCOUNT,
+                  color: "var(--blue)",
+                },
+              ]}
+            />
           </div>
         </section>
       )}

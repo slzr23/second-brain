@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Holding, Transaction } from "../src/data/types";
-import { alerts, averages, incomeKind, salaryPayers, merchantKey, payPeriods, periodLabel, recurringSpending, runway, summarize } from "../src/lib/budget";
+import { alerts, averages, incomeKind, oneOffTest, salaryPayers, merchantKey, payPeriods, periodLabel, recurringSpending, runway, summarize } from "../src/lib/budget";
 
 let n = 0;
 const tx = (date: Date, euros: number, label: string, extra: Partial<Transaction> = {}): Transaction => ({
@@ -132,5 +132,51 @@ describe("averages", () => {
     const p = (m: number) => ({ start: new Date(2026, m, 27), end: new Date(2026, m + 1, 27) });
     const s = [7, 8, 9].map((m) => summarize([tx(new Date(2026, m + 1, 1), -100 * (m - 6), "X", { category: "courses" })], p(m)));
     expect(averages(s)).toMatchObject({ periods: 2, spentCents: 15000, byCategory: { courses: 15000 } });
+  });
+});
+
+describe("money outside the budget", () => {
+  const today = new Date(2026, 10, 26, 14);
+  const pay = [8, 9, 10].map((m) => tx(d(2026, m, 27), 1300, "VIR SEPA ACME"));
+  const early = tx(d(2026, 11, 24), 1300, "VIR SEPA ACME"); // paid early this month
+  const loan = tx(d(2026, 11, 24), 10000, "Pret Etudiant", { transfer: "internal" });
+  const gift = tx(d(2026, 11, 25), 10000, "M Ou Mme Dupont");
+  const toLivret = tx(d(2026, 11, 26), -15000, "VIR VERS LIVRET A", { transfer: "savings" });
+  const groceries = tx(d(2026, 11, 25), -60, "CARREFOUR", { category: "courses" });
+  const list = [...pay, early, loan, gift, toLivret, groceries];
+
+  it("starts the month on the day the salary came, even early", () => {
+    const periods = payPeriods(list, 2, today);
+    expect(periods[1].start).toEqual(new Date(2026, 10, 24));
+  });
+
+  it("spots a loan and a gift, not the salary", () => {
+    const isOneOff = oneOffTest(list);
+    expect([early, loan, gift, groceries].map(isOneOff)).toEqual([false, true, true, false]);
+  });
+
+  it("keeps them out of income, and out of savings once moved", () => {
+    const [, now] = payPeriods(list, 2, today).map((p) => summarize(list, p));
+    expect(now.earnedCents).toBe(130000);
+    expect(now.spentCents).toBe(6000);
+    expect(now.oneOffInCents).toBe(2000000);
+    expect(now.savedCents).toBe(0);
+    expect(now.savedOneOffCents).toBe(1500000);
+  });
+
+  it("leaves what is still on the account out of what is left before payday", () => {
+    const period = payPeriods(list, 1, today)[0];
+    const holdings: Holding[] = [
+      { id: "account", group: "Compte courant", name: "Compte courant", units: 1, unitPrice: 6400, priceDate: today, priceSource: "auto", tracker: null, history: [], investedCents: null },
+    ];
+    expect(runway(holdings, list, [], period, today)).toMatchObject({ oneOffCents: 500000, leftCents: 140000 });
+  });
+
+  it("follows your own choice on a line", () => {
+    const mine = list.map((t) => (t === gift ? { ...t, oneOff: false } : t === groceries ? { ...t, oneOff: true } : t));
+    const [, now] = payPeriods(mine, 2, today).map((p) => summarize(mine, p));
+    expect(now.earnedCents).toBe(1130000);
+    expect(now.spentCents).toBe(0);
+    expect(now.oneOffOutCents).toBe(6000);
   });
 });

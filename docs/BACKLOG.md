@@ -2,7 +2,7 @@
 
 Où en est le projet. Mis à jour à chaque livraison : ce qui est fait, ce qui attend une action de ma part, ce qui vient ensuite.
 
-Dernière mise à jour : 23 novembre 2026
+Dernière mise à jour : 26 novembre 2026
 
 ## 🙋 À faire de mon côté
 
@@ -85,6 +85,8 @@ Dernière mise à jour : 23 novembre 2026
 - « À surveiller » : découvert prévu, frais bancaires sur 12 mois (nets des remises), paiements en double, abonnements en hausse
 - « Chaque mois » : les dépenses récurrentes repérées seules, avec leur coût annuel
 - Argent gagné par type (salaire, aides, virements reçus) comparé au mois dernier
+- Hors budget (26 novembre) : un prêt, un don ou une grosse rentrée ponctuelle sont repérés seuls et comptés à part, hors revenus, dépenses, moyennes et épargne ; ce qui en reste sur le compte n'entre pas dans « Il te reste avant la paie ». N'importe quel mouvement peut être sorti du budget (ou y être remis) d'un geste
+- Salaire versé en avance : le mois démarre le jour où il arrive, dès le 15
 
 **Socle**
 - PWA React installable sur l'écran d'accueil de l'iPhone, connexion Google, données rangées sous mon seul compte

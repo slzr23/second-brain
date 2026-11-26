@@ -63,10 +63,15 @@ export interface Transaction {
   categorySource: "memory" | "rule" | "claude" | "me" | null;
   /** Claude's (or your habit's) proposal, waiting for a swipe to become the necessity. */
   suggestedNecessity: Necessity | null;
+  /**
+   * Outside the monthly budget (a loan, a gift, a one-off purchase): true or false
+   * when you said so, null to let the app guess (lib/budget.ts, `oneOffTest`).
+   */
+  oneOff?: boolean | null;
 }
 
 /** Spending and income ignore money that only moves between your own accounts. */
-export const isSpending = (t: Transaction) => t.amountCents < 0 && !t.transfer;
+export const isSpending = (t: Transaction) => t.amountCents < 0 && !t.transfer && t.oneOff !== true;
 export const isIncome = (t: Transaction) => t.amountCents > 0 && !t.transfer;
 
 export interface NewTransaction {
@@ -245,6 +250,8 @@ export interface DataSource {
   tagTransaction(id: string, necessity: Necessity): Promise<void>;
   /** Your own choice of category: it also becomes the rule for that merchant. */
   setCategory(id: string, category: Category): Promise<void>;
+  /** In or out of the monthly budget; null gives the choice back to the app. */
+  setOneOff(id: string, oneOff: boolean | null): Promise<void>;
   /** Sorts every expense still unsorted (memory, rules, then Claude); returns how many lines got a proposal. */
   classifyNow(): Promise<number>;
   /** Creates the holding when `id` is null. */

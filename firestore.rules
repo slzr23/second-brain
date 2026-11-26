@@ -40,9 +40,11 @@ service cloud.firestore {
               && request.resource.data.account is string && request.resource.data.account.size() <= 60
               && request.resource.data.transfer in ['savings', 'internal', null]));
         allow delete: if isOwner(uid);
-        // Sorting an expense: how much it mattered, and its category (yours from then on).
+        // Sorting an expense: how much it mattered, its category (yours from then on),
+        // and whether it belongs to the monthly budget (a loan, a gift… do not).
         allow update: if isOwner(uid)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['necessity', 'category', 'categorySource'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['necessity', 'category', 'categorySource', 'oneOff'])
+          && request.resource.data.get('oneOff', null) in [true, false, null]
           && request.resource.data.get('necessity', null) in ['essentiel', 'social', 'superflu', null]
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['category', 'categorySource'])
             || (request.resource.data.category in ['courses', 'sorties', 'transport', 'logement', 'abonnements', 'sante', 'shopping', 'loisirs', 'voyages', 'autres']

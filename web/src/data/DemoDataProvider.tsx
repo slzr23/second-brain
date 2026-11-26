@@ -56,6 +56,9 @@ export function DemoDataProvider({ children }: { children: ReactNode }) {
       async setCategory(id, category) {
         setTransactions((list) => list.map((t) => (t.id === id ? { ...t, category, categorySource: "me" } : t)));
       },
+      async setOneOff(id, oneOff) {
+        setTransactions((list) => list.map((t) => (t.id === id ? { ...t, oneOff } : t)));
+      },
       async classifyNow() {
         return 0;
       },

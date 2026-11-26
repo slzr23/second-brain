@@ -55,9 +55,9 @@ export function salaryPayers(transactions: Transaction[]): Set<string> {
     if (t.amountCents < 30_000 || t.transfer || fromPerson(t) || !inCurrentAccount(t)) continue;
     if (AIDS.test(normalize(`${t.label} ${t.merchant ?? ""}`))) continue;
     const day = t.date.getDate();
-    if (day < 20 && day > 3) continue;
+    if (day < 15 && day > 3) continue;
     const key = merchantKey(t);
-    const owner = day >= 20 ? `${t.date.getFullYear()}-${t.date.getMonth()}` : `${t.date.getFullYear()}-${t.date.getMonth() - 1}`;
+    const owner = day >= 15 ? `${t.date.getFullYear()}-${t.date.getMonth()}` : `${t.date.getFullYear()}-${t.date.getMonth() - 1}`;
     months.set(key, (months.get(key) ?? new Set()).add(owner));
   }
   const payers = new Set([...months].filter(([, m]) => m.size >= 3).map(([k]) => k));
@@ -77,6 +77,77 @@ export function incomeKind(t: Transaction, payers: Set<string> = new Set()): Inc
 /** Money that came in, without transfers between your accounts or banks refunding their own fees. */
 export const isEarned = (t: Transaction) => isIncome(t) && !isFeeRefund(t);
 
+/* ------------------------------ Outside the budget ----------------------------- */
+
+/** A loan paid out: borrowed money, whatever the bank calls it. */
+const LOAN = /\bpret\b|financement|deblocage|decaissement/;
+/** Received in one go, not salary nor an allowance: from this much, a one-off. */
+const ONE_OFF_CENTS = 100_000;
+
+const oneOffCache = new WeakMap<Transaction[], (t: Transaction) => boolean>();
+/**
+ * Money that is not part of the monthly budget: a loan, a gift, a big one-off
+ * transfer. Your own choice on a line wins; otherwise a line received is a
+ * one-off when it is a loan, when it is 1 000 € or more and neither the salary
+ * nor an allowance, or when it is more than twice the usual salary.
+ * Spending is only a one-off when you say so.
+ */
+export function oneOffTest(transactions: Transaction[]): (t: Transaction) => boolean {
+  const cached = oneOffCache.get(transactions);
+  if (cached) return cached;
+  const payers = salaryPayers(transactions);
+  const salaries = transactions
+    .filter((t) => inCurrentAccount(t) && isEarned(t) && t.oneOff !== true && incomeKind(t, payers) === "salaire")
+    .map((t) => t.amountCents)
+    .sort((a, b) => a - b);
+  const usual = salaries.length ? salaries[Math.floor(salaries.length / 2)] : null;
+  const test = (t: Transaction) => {
+    if (typeof t.oneOff === "boolean") return t.oneOff;
+    if (t.amountCents <= 0 || !inCurrentAccount(t) || t.transfer === "savings") return false;
+    if (t.amountCents >= 30_000 && LOAN.test(normalize(`${t.label} ${t.merchant ?? ""}`))) return true;
+    if (t.transfer || isFeeRefund(t)) return false;
+    const kind = incomeKind(t, payers);
+    if (kind === "aides") return false;
+    if (usual && t.amountCents > 2 * usual) return true;
+    return kind !== "salaire" && t.amountCents >= ONE_OFF_CENTS;
+  };
+  oneOffCache.set(transactions, test);
+  return test;
+}
+
+export interface OneOffLedger {
+  /** One-off money still on the current account (not yet saved, moved or spent). */
+  leftCents: number;
+  /** Part of each transfer out that carried one-off money, by transaction id. */
+  absorbed: Map<string, number>;
+}
+
+const ledgerCache = new WeakMap<Transaction[], OneOffLedger>();
+/**
+ * Follows one-off money on the current account: it waits there until it is
+ * moved out (to savings or another account of yours) or spent on a one-off.
+ * Moving it to savings is not saving from your pay, so it is told apart.
+ */
+export function oneOffLedger(transactions: Transaction[]): OneOffLedger {
+  const cached = ledgerCache.get(transactions);
+  if (cached) return cached;
+  const isOneOff = oneOffTest(transactions);
+  const lines = transactions.filter(inCurrentAccount).sort((a, b) => a.date.getTime() - b.date.getTime() || (a.amountCents > 0 ? -1 : 1));
+  let left = 0;
+  const absorbed = new Map<string, number>();
+  for (const t of lines) {
+    if (isOneOff(t)) left = Math.max(0, left + t.amountCents);
+    else if (t.transfer && t.amountCents < 0 && left > 0) {
+      const part = Math.min(left, -t.amountCents);
+      absorbed.set(t.id, part);
+      left -= part;
+    }
+  }
+  const ledger = { leftCents: left, absorbed };
+  ledgerCache.set(transactions, ledger);
+  return ledger;
+}
+
 /* ------------------------------- Pay periods --------------------------------- */
 
 export interface Period {
@@ -93,8 +164,9 @@ export interface Period {
 function anchors(transactions: Transaction[]): Map<string, Date> {
   const byMonth = new Map<string, Date>();
   const payers = salaryPayers(transactions);
+  const isOneOff = oneOffTest(transactions);
   for (const t of transactions) {
-    if (!isEarned(t) || t.amountCents < 30_000 || incomeKind(t, payers) !== "salaire") continue;
+    if (!isEarned(t) || t.amountCents < 30_000 || isOneOff(t) || incomeKind(t, payers) !== "salaire") continue;
     const d = startOfDay(t.date);
     const owner = d.getDate() >= 15 ? new Date(d.getFullYear(), d.getMonth(), 1) : new Date(d.getFullYear(), d.getMonth() - 1, 1);
     const key = `${owner.getFullYear()}-${owner.getMonth()}`;
@@ -139,8 +211,14 @@ export interface PeriodSummary {
   /** Positive cents, net of the bank refunding its own fees. */
   spentCents: number;
   byCategory: Partial<Record<CategoryKey, number>>;
-  /** Put on savings accounts, minus what was taken back from them. */
+  /** Put on savings accounts from your pay, minus what was taken back from them. */
   savedCents: number;
+  /** One-off money (a loan, a gift…) moved to savings: not counted as saved. */
+  savedOneOffCents: number;
+  /** Outside the budget: one-off money received, and one-off spending. */
+  oneOffInCents: number;
+  oneOffOutCents: number;
+  oneOff: Transaction[];
   transactions: Transaction[];
 }
 
@@ -154,12 +232,24 @@ export function summarize(transactions: Transaction[], period: Period): PeriodSu
   let spent = 0;
   let saved = 0;
   const payers = salaryPayers(transactions);
+  const isOneOff = oneOffTest(transactions);
+  const { absorbed } = oneOffLedger(transactions);
+  let savedOneOff = 0;
+  let oneOffIn = 0;
+  let oneOffOut = 0;
+  const oneOff: Transaction[] = [];
   // Fees and their refunds land in the same category, so a refunded fee nets to zero.
   const feeCategory = list.find(isFee)?.category ?? "autres";
 
   for (const t of list) {
-    if (t.transfer === "savings") saved -= t.amountCents;
-    else if (t.transfer) continue;
+    if (isOneOff(t)) {
+      oneOff.push(t);
+      if (t.amountCents > 0) oneOffIn += t.amountCents;
+      else oneOffOut -= t.amountCents;
+    } else if (t.transfer === "savings") {
+      saved -= t.amountCents;
+      savedOneOff += absorbed.get(t.id) ?? 0;
+    } else if (t.transfer) continue;
     else if (isFeeRefund(t)) {
       spent -= t.amountCents;
       byCategory[feeCategory] = (byCategory[feeCategory] ?? 0) - t.amountCents;
@@ -178,7 +268,11 @@ export function summarize(transactions: Transaction[], period: Period): PeriodSu
     earnedByKind,
     spentCents: Math.max(0, spent),
     byCategory,
-    savedCents: saved,
+    savedCents: saved - savedOneOff,
+    savedOneOffCents: savedOneOff,
+    oneOffInCents: oneOffIn,
+    oneOffOutCents: oneOffOut,
+    oneOff,
     transactions: list,
   };
 }
@@ -308,6 +402,8 @@ export interface Runway {
   balanceCents: number | null;
   upcoming: Recurring[];
   upcomingCents: number;
+  /** One-off money (a loan, a gift…) still on the account, kept out of what is left. */
+  oneOffCents: number;
   leftCents: number | null;
   payday: Date;
   daysToPayday: number;
@@ -328,11 +424,14 @@ export function runway(holdings: Holding[], transactions: Transaction[], recurri
   }
   const upcoming = recurring.filter((r) => r.next > now && r.next < period.end);
   const upcomingCents = upcoming.reduce((sum, r) => sum + r.amountCents, 0);
+  // A loan or a gift still sitting on the account is not money to live on.
+  const oneOffCents = balance === null ? 0 : Math.min(Math.max(0, balance), oneOffLedger(transactions).leftCents);
   return {
     balanceCents: balance,
     upcoming,
     upcomingCents,
-    leftCents: balance === null ? null : balance - upcomingCents,
+    oneOffCents,
+    leftCents: balance === null ? null : balance - upcomingCents - oneOffCents,
     payday: period.end,
     daysToPayday: Math.max(0, Math.ceil((period.end.getTime() - now.getTime()) / DAY)),
   };

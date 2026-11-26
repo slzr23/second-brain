@@ -64,6 +64,7 @@ const mapTransaction = (id: string, d: DocumentData): Transaction => ({
   bankCategory: d.bankCategory ?? null,
   category: d.category ?? null,
   categorySource: d.categorySource ?? null,
+  oneOff: typeof d.oneOff === "boolean" ? d.oneOff : null,
   suggestedNecessity: d.suggestedNecessity ?? null,
 });
 
@@ -204,6 +205,9 @@ export function FirestoreDataProvider({ uid, ownerName, weekId, children }: { ui
       },
       async setCategory(id, category) {
         await updateDoc(doc(db, "users", uid, "transactions", id), { category, categorySource: "me" });
+      },
+      async setOneOff(id, oneOff) {
+        await updateDoc(doc(db, "users", uid, "transactions", id), { oneOff });
       },
       async classifyNow() {
         const { data } = await httpsCallable<void, { lines: number }>(functions, "classifyNow", { timeout: 540_000 })();
